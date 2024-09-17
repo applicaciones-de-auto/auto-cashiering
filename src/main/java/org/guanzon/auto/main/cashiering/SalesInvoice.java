@@ -18,7 +18,7 @@ import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GTransaction;
-import org.guanzon.auto.controller.cashiering.SalesInvoiceMaster;
+import org.guanzon.auto.controller.cashiering.SalesInvoice_Master;
 import org.json.simple.JSONObject;
 
 /**
@@ -34,12 +34,12 @@ public class SalesInvoice implements GTransaction{
     String psMessagex;
     public JSONObject poJSON;
 
-    SalesInvoiceMaster poController;
+    SalesInvoice_Master poController;
     
     CachedRowSet poPaymentHstry;
     
     public SalesInvoice(GRider foAppDrver, boolean fbWtParent, String fsBranchCd){
-        poController = new SalesInvoiceMaster(foAppDrver,fbWtParent,fsBranchCd);
+        poController = new SalesInvoice_Master(foAppDrver,fbWtParent,fsBranchCd);
         
         poGRider = foAppDrver;
         pbWtParent = fbWtParent;
@@ -217,7 +217,7 @@ public class SalesInvoice implements GTransaction{
     }
 
     @Override
-    public SalesInvoiceMaster getMasterModel() {
+    public SalesInvoice_Master getMasterModel() {
         return poController;
     }
 

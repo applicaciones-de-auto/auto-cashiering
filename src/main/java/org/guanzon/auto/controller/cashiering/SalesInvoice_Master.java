@@ -6,19 +6,16 @@
 package org.guanzon.auto.controller.cashiering;
 
 import java.sql.Connection;
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.guanzon.appdriver.agent.ShowDialogFX;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.base.MiscUtil;
+import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.constant.TransactionStatus;
 import org.guanzon.appdriver.iface.GTransaction;
-import org.guanzon.auto.model.cashiering.Model_SalesInvoice_Source;
+import org.guanzon.auto.general.SearchDialog;
+import org.guanzon.auto.model.cashiering.Model_SalesInvoice_Master;
+import org.guanzon.auto.model.sales.Model_VehicleDeliveryReceipt_Master;
 import org.guanzon.auto.validator.cashiering.ValidatorFactory;
 import org.guanzon.auto.validator.cashiering.ValidatorInterface;
 import org.json.simple.JSONObject;
@@ -27,8 +24,8 @@ import org.json.simple.JSONObject;
  *
  * @author Arsiela
  */
-public class SalesInvoiceSource implements GTransaction {
-    final String XML = "Model_SalesInvoice_Source.xml";
+public class SalesInvoice_Master implements GTransaction {
+    final String XML = "Model_SalesInvoice_Master.xml";
     GRider poGRider;
     String psBranchCd;
     String psTargetBranchCd;
@@ -39,19 +36,14 @@ public class SalesInvoiceSource implements GTransaction {
     String psMessagex;
     public JSONObject poJSON;
     
-    Model_SalesInvoice_Source poModel;
-//    Model_VehicleSalesProposal_Master poVSPModel;
-//    Model_Inquiry_Master poINQModel;
+    Model_SalesInvoice_Master poModel;
 
-    public SalesInvoiceSource(GRider foGRider, boolean fbWthParent, String fsBranchCd) {
+    public SalesInvoice_Master(GRider foGRider, boolean fbWthParent, String fsBranchCd) {
         poGRider = foGRider;
         pbWtParent = fbWthParent;
         psBranchCd = fsBranchCd.isEmpty() ? foGRider.getBranchCode() : fsBranchCd;
         
-        poModel = new Model_SalesInvoice_Source(foGRider);
-//        poVSPModel = new Model_VehicleSalesProposal_Master(foGRider);
-//        poINQModel = new Model_Inquiry_Master(foGRider);
-//        poVHCLModel = new Model_Vehicle_Serial_Master(foGRider);
+        poModel = new Model_SalesInvoice_Master(foGRider);
         pnEditMode = EditMode.UNKNOWN;
     }
 
@@ -62,7 +54,7 @@ public class SalesInvoiceSource implements GTransaction {
     }
     
     @Override
-    public Model_SalesInvoice_Source getMasterModel() {
+    public Model_SalesInvoice_Master getMasterModel() {
         return poModel;
     }
     
@@ -106,7 +98,7 @@ public class SalesInvoiceSource implements GTransaction {
             pnEditMode = EditMode.ADDNEW;
             org.json.simple.JSONObject obj;
 
-            poModel = new Model_SalesInvoice_Source(poGRider);
+            poModel = new Model_SalesInvoice_Master(poGRider);
             Connection loConn = null;
             loConn = setConnection();
 
@@ -145,7 +137,7 @@ public class SalesInvoiceSource implements GTransaction {
         pnEditMode = EditMode.READY;
         poJSON = new JSONObject();
         
-        poModel = new Model_SalesInvoice_Source(poGRider);
+        poModel = new Model_SalesInvoice_Master(poGRider);
         poJSON = poModel.openRecord(fsValue);
         
         return poJSON;
@@ -170,7 +162,7 @@ public class SalesInvoiceSource implements GTransaction {
     public JSONObject saveTransaction() {
         poJSON = new JSONObject();  
         
-        ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.SalesInvoice_Source, poModel);
+        ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.SalesInvoice_Master, poModel);
         validator.setGRider(poGRider);
         if (!validator.isEntryOkay()){
             poJSON.put("result", "error");
@@ -211,45 +203,38 @@ public class SalesInvoiceSource implements GTransaction {
     public JSONObject cancelTransaction(String string) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-//    
-//    /**
-//     * Search UDR Transaction
-//     * @param fsValue Reference No
-//     * @param fIsActive if true search for active else false all transaction
-//     * @return 
-//     */
-//    public JSONObject searchTransaction(String fsValue, boolean fIsActive) {
-//        String lsHeader = "UDR Date»UDR No»Customer»CS No»Plate No»Status"; 
-//        String lsColName = "dTransact»sReferNox»sBuyCltNm»sCSNoxxxx»sPlateNox»sTranStat"; 
-//        String lsSQL = poModel.getSQL();
-//        
-//        if(fIsActive){
-//            lsSQL = MiscUtil.addCondition(lsSQL, " a.sReferNox LIKE " + SQLUtil.toSQL(fsValue + "%") 
-//                                                    + " AND a.cTranStat <> " + SQLUtil.toSQL(TransactionStatus.STATE_CANCELLED));
-//        } 
-//
-//        System.out.println(lsSQL);
-//        JSONObject loJSON = SearchDialog.jsonSearch(
-//                    poGRider,
-//                    lsSQL,
-//                    "",
-//                    lsHeader,
-//                    lsColName,
-//                "0.1D»0.2D»0.3D»0.2D»0.2D»0.3D", 
-//                    "VDR",
-//                    0);
-//
-//        if (loJSON != null && !"error".equals((String) loJSON.get("result"))) {
-//        }else {
-//            loJSON = new JSONObject();
-//            loJSON.put("result", "error");
-//            loJSON.put("message", "No Transaction loaded.");
-//            return loJSON;
-//        }
-//
-//        return loJSON;
-//    }
-//    
+    
+    /**
+     * Search SI Transaction
+     * @param fsValue Reference No
+     * @return 
+     */
+    public JSONObject searchTransaction(String fsValue) {
+        String lsHeader = "SI Date»SI No»Customer»Address»Status"; 
+        String lsColName = "dTransact»sReferNox»sBuyCltNm»sAddressx»sTranStat"; 
+        String lsSQL = poModel.getSQL();
+        
+        System.out.println(lsSQL);
+        JSONObject loJSON = SearchDialog.jsonSearch(
+                    poGRider,
+                    lsSQL,
+                    "",
+                    lsHeader,
+                    lsColName,
+                "0.1D»0.2D»0.3D»0.2D»0.2D»0.3D", 
+                    "SI",
+                    0);
+
+        if (loJSON != null && !"error".equals((String) loJSON.get("result"))) {
+        }else {
+            loJSON = new JSONObject();
+            loJSON.put("result", "error");
+            loJSON.put("message", "No Transaction loaded.");
+            return loJSON;
+        }
+
+        return loJSON;
+    }
     
     @Override
     public JSONObject searchWithCondition(String string) {
@@ -276,51 +261,5 @@ public class SalesInvoiceSource implements GTransaction {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-//    public JSONObject searchVSP(String fsValue, boolean fbByCode) {
-//        JSONObject loJSON = new JSONObject();  
-//        String lsSQL = poVSPModel.getSQL();
-//        String lsTransNo = "sVSPNOxxx";
-//        if(fbByCode){
-//            lsTransNo = "sTransNox";
-//        }
-//        String lsHeader = "VSP No»Customer Name";
-//        String lsColName = lsTransNo+"»sBuyCltNm"; 
-//        String lsCriteria = "h."+lsTransNo+"»b.sCompnyNm»" 
-//                            + "IFNULL(CONCAT( IFNULL(CONCAT(d.sHouseNox,' ') , ''), "                      
-//                            + " 	IFNULL(CONCAT(d.sAddressx,' ') , ''),  "                                     
-//                            + " 	IFNULL(CONCAT(e.sBrgyName,' '), ''),   "                                     
-//                            + " 	IFNULL(CONCAT(f.sTownName, ', '),''),  "                                     
-//                            + " 	IFNULL(CONCAT(g.sProvName),'') )	, '')";
-//        
-//        if(fbByCode){
-//            lsSQL = MiscUtil.addCondition(lsSQL,  " (a.sSerialID <> NULL OR a.sSerialID <> '') "
-//                                                + " AND a.cTranStat = " + TransactionStatus.STATE_CLOSED //APPROVE
-//                                                + " AND a.sTransNox = " + SQLUtil.toSQL(fsValue)
-//                                                + " GROUP BY a.sTransNox ");
-//        } else {
-//            lsSQL = MiscUtil.addCondition(lsSQL,  " (a.sSerialID <> NULL OR a.sSerialID <> '') "
-//                                                + " AND a.cTranStat = " + TransactionStatus.STATE_CLOSED //APPROVE
-//                                                + " AND b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")
-//                                                + " GROUP BY a.sTransNox ");
-//        }
-//        
-//        System.out.println("SEARCH VSP: " + lsSQL);
-//        loJSON = ShowDialogFX.Search(poGRider,
-//                lsSQL,
-//                fsValue,
-//                    lsHeader,
-//                    lsColName,
-//                    lsCriteria,
-//                fbByCode ? 0 : 1);
-//
-//        if (loJSON != null) {
-//        } else {
-//            loJSON = new JSONObject();
-//            loJSON.put("result", "error");
-//            loJSON.put("message", "No record loaded.");
-//            return loJSON;
-//        }
-//        return loJSON;
-//    }
     
 }
