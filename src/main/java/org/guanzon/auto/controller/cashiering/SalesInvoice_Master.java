@@ -6,6 +6,9 @@
 package org.guanzon.auto.controller.cashiering;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.guanzon.appdriver.agent.ShowDialogFX;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.base.MiscUtil;
@@ -13,9 +16,9 @@ import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.constant.TransactionStatus;
 import org.guanzon.appdriver.iface.GTransaction;
+import org.guanzon.auto.general.CancelForm;
 import org.guanzon.auto.general.SearchDialog;
 import org.guanzon.auto.model.cashiering.Model_SalesInvoice_Master;
-import org.guanzon.auto.model.sales.Model_VehicleDeliveryReceipt_Master;
 import org.guanzon.auto.validator.cashiering.ValidatorFactory;
 import org.guanzon.auto.validator.cashiering.ValidatorInterface;
 import org.json.simple.JSONObject;
@@ -102,7 +105,7 @@ public class SalesInvoice_Master implements GTransaction {
             Connection loConn = null;
             loConn = setConnection();
 
-            poModel.setTransNo(MiscUtil.getNextCode(poModel.getTable(), "sTransNox", true, poGRider.getConnection(), poGRider.getBranchCode()+"SI"));
+            poModel.setTransNo(MiscUtil.getNextCode(poModel.getTable(), "sTransNox", true, poGRider.getConnection(), poGRider.getBranchCode()+"S"));
             poModel.setReferNo(MiscUtil.getNextCode(poModel.getTable(), "sReferNox", true, poGRider.getConnection(), poGRider.getBranchCode()));
             poModel.newRecord();
             
@@ -200,8 +203,43 @@ public class SalesInvoice_Master implements GTransaction {
     }
 
     @Override
-    public JSONObject cancelTransaction(String string) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public JSONObject cancelTransaction(String fsValue) {
+        poJSON = new JSONObject();
+
+        if (poModel.getEditMode() == EditMode.UPDATE) {
+            try {
+                poModel.setTranStat(TransactionStatus.STATE_CANCELLED);
+                
+                ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.SalesInvoice_Master, poModel);
+                validator.setGRider(poGRider);
+                if (!validator.isEntryOkay()){
+                    poJSON.put("result", "error");
+                    poJSON.put("message", validator.getMessage());
+                    return poJSON;
+                } 
+
+                CancelForm cancelform = new CancelForm();
+                if (!cancelform.loadCancelWindow(poGRider, poModel.getReferNo(), poModel.getTransNo(), "VSI")) {
+                    poJSON.put("result", "error");
+                    poJSON.put("message", "Cancellation failed.");
+                    return poJSON;
+                } 
+
+                poJSON = poModel.saveRecord();
+                if ("success".equals((String) poJSON.get("result"))) {
+                } else {
+                    poJSON.put("result", "error");
+                    poJSON.put("message", "Cancellation failed.");
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(SalesInvoice_Master.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else {
+            poJSON = new JSONObject();
+            poJSON.put("result", "error");
+            poJSON.put("message", "No transaction loaded to update.");
+        }
+        return poJSON;
     }
     
     /**
@@ -261,5 +299,51 @@ public class SalesInvoice_Master implements GTransaction {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
+    
+    public JSONObject searchVDR(String fsValue, boolean fbByCode) {
+        JSONObject loJSON = new JSONObject();  
+        Model_SalesInvoice_Master loEntity = new Model_SalesInvoice_Master(poGRider);
+        String lsSQL = loEntity.getSQL();
+        String lsTransNo = "sReferNox";
+        if(fbByCode){
+            lsTransNo = "sTransNox";
+        }
+        String lsHeader = "VDR No»Customer Name»Address";
+        String lsColName = lsTransNo+"»sBuyCltNm»sAddressx"; 
+        String lsCriteria = "a."+lsTransNo+"»b.sCompnyNm»" 
+                            + "IFNULL(CONCAT( IFNULL(CONCAT(d.sHouseNox,' ') , ''), "                      
+                            + " 	IFNULL(CONCAT(d.sAddressx,' ') , ''),  "                                     
+                            + " 	IFNULL(CONCAT(e.sBrgyName,' '), ''),   "                                     
+                            + " 	IFNULL(CONCAT(f.sTownName, ', '),''),  "                                     
+                            + " 	IFNULL(CONCAT(g.sProvName),'') )	, '')";
+        
+        if(fbByCode){
+            lsSQL = MiscUtil.addCondition(lsSQL,  " a.cTranStat <> " + TransactionStatus.STATE_CANCELLED 
+                                                + " AND a.sTransNox = " + SQLUtil.toSQL(fsValue)
+                                                + " GROUP BY a.sTransNox ");
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL,  " a.cTranStat <> " + TransactionStatus.STATE_CANCELLED 
+                                                + " AND b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                                + " GROUP BY a.sTransNox ");
+        }
+        
+        System.out.println("SEARCH VDR: " + lsSQL);
+        loJSON = ShowDialogFX.Search(poGRider,
+                lsSQL,
+                fsValue,
+                    lsHeader,
+                    lsColName,
+                    lsCriteria,
+                fbByCode ? 0 : 1);
+
+        if (loJSON != null) {
+        } else {
+            loJSON = new JSONObject();
+            loJSON.put("result", "error");
+            loJSON.put("message", "No record loaded.");
+            return loJSON;
+        }
+        return loJSON;
+    }
     
 }
