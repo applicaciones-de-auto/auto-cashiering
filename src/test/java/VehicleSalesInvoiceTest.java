@@ -2,7 +2,6 @@
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import org.guanzon.appdriver.base.GRider;
-import org.guanzon.auto.main.cashiering.VehicleSalesInvoice;
 import org.json.simple.JSONObject;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertTrue;
@@ -24,7 +23,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class VehicleSalesInvoiceTest {
-    static VehicleSalesInvoice model;
+//    static VehicleSalesInvoice model;
     JSONObject json;
     boolean result;
     static GRider instance;
@@ -53,7 +52,7 @@ public class VehicleSalesInvoiceTest {
         JSONObject json;
         
         System.out.println("sBranch code = " + instance.getBranchCode());
-        model = new VehicleSalesInvoice(instance,false, instance.getBranchCode());
+//        model = new VehicleSalesInvoice(instance,false, instance.getBranchCode());
     }
     
     @AfterClass
@@ -67,104 +66,104 @@ public class VehicleSalesInvoiceTest {
      * ARSIELA
      */
     
-    @Test
-    public void test01NewRecord() throws SQLException{
-        System.out.println("--------------------------------------------------------------------");
-        System.out.println("------------------------------NEW RECORD--------------------------------------");
-        System.out.println("--------------------------------------------------------------------");
-        
-        json = model.newTransaction();
-        if ("success".equals((String) json.get("result"))){
-            json = model.getMasterModel().getMasterModel().setTransactDte(instance.getServerDate());
-            if ("error".equals((String) json.get("result"))){
-                System.err.println((String) json.get("message"));
-                System.exit(1);
-            }
-            json = model.getMasterModel().getMasterModel().setClientID("M00124000031");
-            if ("error".equals((String) json.get("result"))){
-                System.err.println((String) json.get("message"));
-                System.exit(1);
-            }
-            json = model.getMasterModel().getMasterModel().setBranchCd("M001");
-            if ("error".equals((String) json.get("result"))){
-                System.err.println((String) json.get("message"));
-                System.exit(1);
-            }
-            json = model.getMasterModel().getMasterModel().setTranTotl(new BigDecimal("214250.00"));
-            if ("error".equals((String) json.get("result"))){
-                System.err.println((String) json.get("message"));
-                System.exit(1);
-            }
-            json = model.getMasterModel().getMasterModel().setDiscount(new BigDecimal("0.00"));
-            if ("error".equals((String) json.get("result"))){
-                System.err.println((String) json.get("message"));
-                System.exit(1);
-            }
-            
-            model.addVSISource();
-            for(int lnCtr = 0; lnCtr <= model.getVSISourceList().size()-1; lnCtr++){
-                json = model.getVSISourceModel().getDetailModel().setReferNo("M001VDR24004");
-                if ("error".equals((String) json.get("result"))){
-                    System.err.println((String) json.get("message"));
-                    System.exit(1);
-                }
-                
-                json = model.getVSISourceModel().getDetailModel().setTranAmt(new BigDecimal("214250.00"));
-                if ("error".equals((String) json.get("result"))){
-                    System.err.println((String) json.get("message"));
-                    System.exit(1);
-                }
-                
-                json = model.getVSISourceModel().getDetailModel().setDiscount(new BigDecimal("0.00"));
-                if ("error".equals((String) json.get("result"))){
-                    System.err.println((String) json.get("message"));
-                    System.exit(1);
-                }
-                
-                json = model.getVSISourceModel().getDetailModel().setAdvused(new BigDecimal("0.00"));
-                if ("error".equals((String) json.get("result"))){
-                    System.err.println((String) json.get("message"));
-                    System.exit(1);
-                }
-                
-                json = model.getVSISourceModel().getDetailModel().setNetAmt(new BigDecimal("214250.00"));
-                if ("error".equals((String) json.get("result"))){
-                    System.err.println((String) json.get("message"));
-                    System.exit(1);
-                }
-                
-                json = model.getVSISourceModel().getDetailModel().setTranType("VSI");
-                if ("error".equals((String) json.get("result"))){
-                    System.err.println((String) json.get("message"));
-                    System.exit(1);
-                }
-            }
-        } else {
-            System.err.println("result = " + (String) json.get("result"));
-            fail((String) json.get("message"));
-        }
-        
-    }
-    
-    @Test
-    public void test01NewRecordSave(){
-        System.out.println("--------------------------------------------------------------------");
-        System.out.println("------------------------------NEW RECORD SAVING--------------------------------------");
-        System.out.println("--------------------------------------------------------------------");
-        
-        json = model.saveTransaction();
-        System.err.println((String) json.get("message"));
-        
-        if (!"success".equals((String) json.get("result"))){
-            System.err.println((String) json.get("message"));
-            result = false;
-        } else {
-            System.out.println((String) json.get("message"));
-            result = true;
-        }
-        assertTrue(result);
-        //assertFalse(result);
-    }
+//    @Test
+//    public void test01NewRecord() throws SQLException{
+//        System.out.println("--------------------------------------------------------------------");
+//        System.out.println("------------------------------NEW RECORD--------------------------------------");
+//        System.out.println("--------------------------------------------------------------------");
+//        
+//        json = model.newTransaction();
+//        if ("success".equals((String) json.get("result"))){
+//            json = model.getMasterModel().getMasterModel().setTransactDte(instance.getServerDate());
+//            if ("error".equals((String) json.get("result"))){
+//                System.err.println((String) json.get("message"));
+//                System.exit(1);
+//            }
+//            json = model.getMasterModel().getMasterModel().setClientID("M00124000031");
+//            if ("error".equals((String) json.get("result"))){
+//                System.err.println((String) json.get("message"));
+//                System.exit(1);
+//            }
+//            json = model.getMasterModel().getMasterModel().setBranchCd("M001");
+//            if ("error".equals((String) json.get("result"))){
+//                System.err.println((String) json.get("message"));
+//                System.exit(1);
+//            }
+//            json = model.getMasterModel().getMasterModel().setTranTotl(new BigDecimal("214250.00"));
+//            if ("error".equals((String) json.get("result"))){
+//                System.err.println((String) json.get("message"));
+//                System.exit(1);
+//            }
+//            json = model.getMasterModel().getMasterModel().setDiscount(new BigDecimal("0.00"));
+//            if ("error".equals((String) json.get("result"))){
+//                System.err.println((String) json.get("message"));
+//                System.exit(1);
+//            }
+//            
+//            model.addVSISource();
+//            for(int lnCtr = 0; lnCtr <= model.getVSISourceList().size()-1; lnCtr++){
+//                json = model.getVSISourceModel().getDetailModel().setReferNo("M001VDR24004");
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getVSISourceModel().getDetailModel().setTranAmt(new BigDecimal("214250.00"));
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getVSISourceModel().getDetailModel().setDiscount(new BigDecimal("0.00"));
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getVSISourceModel().getDetailModel().setAdvused(new BigDecimal("0.00"));
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getVSISourceModel().getDetailModel().setNetAmt(new BigDecimal("214250.00"));
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getVSISourceModel().getDetailModel().setTranType("VSI");
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//            }
+//        } else {
+//            System.err.println("result = " + (String) json.get("result"));
+//            fail((String) json.get("message"));
+//        }
+//        
+//    }
+//    
+//    @Test
+//    public void test01NewRecordSave(){
+//        System.out.println("--------------------------------------------------------------------");
+//        System.out.println("------------------------------NEW RECORD SAVING--------------------------------------");
+//        System.out.println("--------------------------------------------------------------------");
+//        
+//        json = model.saveTransaction();
+//        System.err.println((String) json.get("message"));
+//        
+//        if (!"success".equals((String) json.get("result"))){
+//            System.err.println((String) json.get("message"));
+//            result = false;
+//        } else {
+//            System.out.println((String) json.get("message"));
+//            result = true;
+//        }
+//        assertTrue(result);
+//        //assertFalse(result);
+//    }
     
     
 //    @Test

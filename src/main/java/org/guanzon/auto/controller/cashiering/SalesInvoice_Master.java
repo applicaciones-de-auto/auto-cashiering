@@ -19,6 +19,7 @@ import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.general.CancelForm;
 import org.guanzon.auto.general.SearchDialog;
 import org.guanzon.auto.model.cashiering.Model_SalesInvoice_Master;
+import org.guanzon.auto.model.sales.Model_VehicleDeliveryReceipt_Master;
 import org.guanzon.auto.validator.cashiering.ValidatorFactory;
 import org.guanzon.auto.validator.cashiering.ValidatorInterface;
 import org.json.simple.JSONObject;
@@ -106,7 +107,7 @@ public class SalesInvoice_Master implements GTransaction {
             loConn = setConnection();
 
             poModel.setTransNo(MiscUtil.getNextCode(poModel.getTable(), "sTransNox", true, poGRider.getConnection(), poGRider.getBranchCode()+"S"));
-            poModel.setReferNo(MiscUtil.getNextCode(poModel.getTable(), "sReferNox", true, poGRider.getConnection(), poGRider.getBranchCode()));
+//            poModel.setReferNo(MiscUtil.getNextCode(poModel.getTable(), "sReferNox", true, poGRider.getConnection(), poGRider.getBranchCode()));
             poModel.newRecord();
             
             if (poModel == null){
@@ -300,9 +301,9 @@ public class SalesInvoice_Master implements GTransaction {
     }
     
     
-    public JSONObject searchVDR(String fsValue, boolean fbByCode) {
+    public JSONObject searchVDR(String fsValue, boolean fbByCode, String fsClientType) {
         JSONObject loJSON = new JSONObject();  
-        Model_SalesInvoice_Master loEntity = new Model_SalesInvoice_Master(poGRider);
+        Model_VehicleDeliveryReceipt_Master loEntity = new Model_VehicleDeliveryReceipt_Master(poGRider);
         String lsSQL = loEntity.getSQL();
         String lsTransNo = "sReferNox";
         if(fbByCode){
@@ -320,10 +321,12 @@ public class SalesInvoice_Master implements GTransaction {
         if(fbByCode){
             lsSQL = MiscUtil.addCondition(lsSQL,  " a.cTranStat <> " + TransactionStatus.STATE_CANCELLED 
                                                 + " AND a.sTransNox = " + SQLUtil.toSQL(fsValue)
+                                                + " AND a.cCustType = " + SQLUtil.toSQL(fsClientType)
                                                 + " GROUP BY a.sTransNox ");
         } else {
             lsSQL = MiscUtil.addCondition(lsSQL,  " a.cTranStat <> " + TransactionStatus.STATE_CANCELLED 
                                                 + " AND b.sCompnyNm LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                                + " AND a.cCustType = " + SQLUtil.toSQL(fsClientType)
                                                 + " GROUP BY a.sTransNox ");
         }
         
