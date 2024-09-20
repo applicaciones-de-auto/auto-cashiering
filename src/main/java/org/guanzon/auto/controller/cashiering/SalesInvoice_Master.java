@@ -253,6 +253,7 @@ public class SalesInvoice_Master implements GTransaction {
         String lsColName = "dTransact»sReferNox»sBuyCltNm»sAddressx»sTranStat"; 
         String lsSQL = poModel.getSQL();
         
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox IN (SELECT si_master_source.sTransNox FROM si_master_source WHERE si_master_source.sTranType = 'VSI') ");
         System.out.println(lsSQL);
         JSONObject loJSON = SearchDialog.jsonSearch(
                     poGRider,

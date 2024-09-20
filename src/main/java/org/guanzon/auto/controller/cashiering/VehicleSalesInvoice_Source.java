@@ -72,14 +72,14 @@ public class VehicleSalesInvoice_Source {
             if (MiscUtil.RecordCount(loRS) > 0) {
                 paDetail = new ArrayList<>();
                 while(loRS.next()){
-                        paDetail.add(new Model_VehicleSalesInvoice(poGRider));
-                        paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox"), 1 ); //fixed 1 row
-                        
-                        pnEditMode = EditMode.UPDATE;
-                        lnctr++;
-                        poJSON.put("result", "success");
-                        poJSON.put("message", "Record loaded successfully.");
-                    } 
+                    paDetail.add(new Model_VehicleSalesInvoice(poGRider));
+                    paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox"), 1 ); //fixed 1 row
+
+                    pnEditMode = EditMode.UPDATE;
+                    lnctr++;
+                    poJSON.put("result", "success");
+                    poJSON.put("message", "Record loaded successfully.");
+                } 
                 
                 System.out.println("lnctr = " + lnctr);
             }else{
