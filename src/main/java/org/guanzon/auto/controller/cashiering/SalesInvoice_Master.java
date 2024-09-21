@@ -261,7 +261,7 @@ public class SalesInvoice_Master implements GTransaction {
                     "",
                     lsHeader,
                     lsColName,
-                "0.1D»0.2D»0.3D»0.2D»0.2D»0.3D", 
+                "0.1D»0.2D»0.4D»0.4D»0.2D", 
                     "SI",
                     0);
 

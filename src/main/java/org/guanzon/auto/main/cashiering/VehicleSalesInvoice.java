@@ -121,6 +121,7 @@ public class VehicleSalesInvoice implements GTransaction{
     public JSONObject saveTransaction() {
         poJSON = new JSONObject();  
         
+        computeAmount();
         
         if (!pbWtParent) poGRider.beginTrans();
         
@@ -226,9 +227,19 @@ public class VehicleSalesInvoice implements GTransaction{
         JSONObject loJSON = new JSONObject();
         loJSON = poController.searchVDR(fsValue, fbByCode, fsClientType);
         if(!"error".equals((String) loJSON.get("result"))){
+            if(((String) loJSON.get("sSINoxxxx")) != null){
+                if(!((String) loJSON.get("sSINoxxxx")).trim().isEmpty()){
+                    loJSON.put("result", "error");
+                    loJSON.put("message", "VSP No. "+(String) loJSON.get("sReferNox")+" has existing DR No. " + (String) loJSON.get("sSINoxxxx") 
+                                            + "\n\nLinking aborted.");
+                    return loJSON;
+                }
+            }
+            
             //Buying Customer Default         
             poController.getMasterModel().setClientID((String) loJSON.get("sClientID"));                                                        
             poController.getMasterModel().setBuyCltNm((String) loJSON.get("sBuyCltNm"));                                                        
+            poController.getMasterModel().setTaxIDNo((String) loJSON.get("sTaxIDNox"));                                                         
             poController.getMasterModel().setAddress(((String) loJSON.get("sAddressx")).trim());                                                     
             poController.getMasterModel().setBranchCd((String) loJSON.get("sBranchCD"));         
             
@@ -315,6 +326,7 @@ public class VehicleSalesInvoice implements GTransaction{
         Double ldblBasePriceWVatPercent = poVSISource.getDetailModel().getBasePriceWVatPercent();
         Double ldblBasePrice = 0.00;// new BigDecimal("0.00");
         Double ldblVatAmt =  0.00; //new BigDecimal("0.00");
+        Double ldblVatSales =  0.00;
         Double ldblTranTotl = 0.00; // new BigDecimal("0.00");
         String lsFormType = poVSISource.getDetailModel().getCustType();
         
@@ -351,7 +363,8 @@ public class VehicleSalesInvoice implements GTransaction{
 //            ldblTranTotl = (ldblBasePrice.add(ldblVatAmt)).subtract(ldblDiscount).setScale(2, BigDecimal.ROUND_HALF_UP) ;
             ldblTranTotl = (ldblBasePrice + ldblVatAmt) - ldblDiscount;
         }
-        
+        ldblVatSales = ldblUnitPrice - ldblVatAmt;
+        poController.getMasterModel().setVatSales(new BigDecimal(ldblVatSales)); 
         poController.getMasterModel().setVatAmt(new BigDecimal(ldblVatAmt)); 
         poController.getMasterModel().setTranTotl(new BigDecimal(ldblTranTotl)); 
         return loJSON;
