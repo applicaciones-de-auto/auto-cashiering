@@ -84,44 +84,44 @@ public class CashierReceivables_Detail implements GTranDet {
         return poJSON;
     }
     
-//    public JSONObject openDetail(String fsValue){
-//        paDetail = new ArrayList<>();
-//        paRemDetail = new ArrayList<>();
-//        poJSON = new JSONObject();
-//        Model_Cashier_Receivables_Detail loEntity = new Model_Cashier_Receivables_Detail(poGRider);
-//        String lsSQL =  loEntity.makeSelectSQL();
-//        lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL(fsValue))
-//                                                + "  ORDER BY nEntryNox ASC " ;
-//        System.out.println(lsSQL);
-//        ResultSet loRS = poGRider.executeQuery(lsSQL);
-//        
-//        try {
-//            int lnctr = 0;
-//            if (MiscUtil.RecordCount(loRS) > 0) {
-//                while(loRS.next()){
-//                        paDetail.add(new Model_Cashier_Receivables_Detail(poGRider));
-//                        paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox"), loRS.getString("sTranType"));
-//                        
-//                        pnEditMode = EditMode.UPDATE;
-//                        lnctr++;
-//                        poJSON.put("result", "success");
-//                        poJSON.put("message", "Record loaded successfully.");
-//                    } 
-//                
-//            }else{
-////                paDetail = new ArrayList<>();
-////                addDetail(fsValue);
-//                poJSON.put("result", "error");
-//                poJSON.put("continue", true);
-//                poJSON.put("message", "No record selected.");
-//            }
-//            MiscUtil.close(loRS);
-//        } catch (SQLException e) {
-//            poJSON.put("result", "error");
-//            poJSON.put("message", e.getMessage());
-//        }
-//        return poJSON;
-//    }
+    public JSONObject openDetail(String fsValue){
+        paDetail = new ArrayList<>();
+        paRemDetail = new ArrayList<>();
+        poJSON = new JSONObject();
+        Model_Cashier_Receivables_Detail loEntity = new Model_Cashier_Receivables_Detail(poGRider);
+        String lsSQL =  loEntity.makeSelectSQL();
+        lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL(fsValue))
+                                                + "  ORDER BY nEntryNox ASC " ;
+        System.out.println(lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        
+        try {
+            int lnctr = 0;
+            if (MiscUtil.RecordCount(loRS) > 0) {
+                while(loRS.next()){
+                        paDetail.add(new Model_Cashier_Receivables_Detail(poGRider));
+                        paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox"), loRS.getString("sTranType"));
+                        
+                        pnEditMode = EditMode.UPDATE;
+                        lnctr++;
+                        poJSON.put("result", "success");
+                        poJSON.put("message", "Record loaded successfully.");
+                    } 
+                
+            }else{
+//                paDetail = new ArrayList<>();
+//                addDetail(fsValue);
+                poJSON.put("result", "error");
+                poJSON.put("continue", true);
+                poJSON.put("message", "No record selected.");
+            }
+            MiscUtil.close(loRS);
+        } catch (SQLException e) {
+            poJSON.put("result", "error");
+            poJSON.put("message", e.getMessage());
+        }
+        return poJSON;
+    }
     
     public JSONObject saveDetail(String fsTransNo){
         JSONObject obj = new JSONObject();
@@ -287,6 +287,15 @@ public class CashierReceivables_Detail implements GTranDet {
     @Override
     public void setTransactionStatus(String string) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    public JSONObject deleteRecord(String fsValue) {
+        Model_Cashier_Receivables_Detail loEntity = new Model_Cashier_Receivables_Detail(poGRider);
+        return loEntity.deleteRecord(fsValue);
+    }
+    
+    public void resetDetail() {
+        paDetail = null;
     }
     
 }

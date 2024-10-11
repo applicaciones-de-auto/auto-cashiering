@@ -223,67 +223,295 @@ public class CashierReceivables implements GTransaction{
                 VEHICLE SALES transactions were grouped into
                 1. Charged to Customer
                 2. Charged to Bank -proceeds for Financing and Purchase Order payment mode */
-                
-                //Retrieve VSP 
-                VehicleSalesProposal loVSP = new VehicleSalesProposal(poGRider, pbWtParent, psBranchCd);
-                loJSON = loVSP.openTransaction(fsTransCode);
-                if(!"error".equals((String) loJSON.get("result"))){
-                    //Re-compute amount
-                    loVSP.computeAmount();
-                    
-                    loJSON = poController.checkExistingCAR("c","VEHICLE SALES", fsTransCode);
-                    //If CAR is already exist for the said transaction then retrieve the car to UPDATE
-                    if(!"exist".equals((String) loJSON.get("result"))){
-                        loJSON = newTransaction();
-                    } else {
-                        loJSON = openTransaction((String) loJSON.get("sTransNox"));
-                    } 
-                    
-                    /*1. CHARGED TO CUSTOMER Transactions */
-                    if(!"error".equals((String) loJSON.get("result"))){
-                        poController.getMasterModel().setPayerCde("c");
-                        poController.getMasterModel().setSourceCD("VEHICLE SALES");
-                        poController.getMasterModel().setReferNo(fsTransCode);
-                        poController.getMasterModel().setClientID(loVSP.getMasterModel().getMasterModel().getClientID());
-                        poController.getMasterModel().setGrossAmt(loVSP.getMasterModel().getMasterModel().getTranTotl());
-                        poController.getMasterModel().setDiscAmt(loVSP.getTotalDiscount());
-                        poController.getMasterModel().setTotalAmt(loVSP.getMasterModel().getMasterModel().getNetTTotl());
-                    }
-                    
-                    //Save CAR Head
-                    loJSON = saveTransaction();
-                    if(!"error".equals((String) loJSON.get("result"))){
-                        //Mandatory delete the CAR detail
-                        loJSON = poDetail.getMasterModel().deleteRecord(poController.getMasterModel().getTransNo());
-                        if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
-                            if (!pbWtParent) poGRider.rollbackTrans();
-                            return checkData(poJSON);
-                        }
-                        
-                        //Proceed to save CAR Detail
-                        //IDENTIFIED new and used vehicle sales 
-                        poDetail.addDetail(poController.getMasterModel().getTransNo());
-                        if(loVSP.getMasterModel().getMasterModel().getIsVhclNw().equals("0")){ 
-                            //BRAND NEW : UNIT -NEW VEHICLE SALES
-                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("NEWVHCLSALE");
-                        } else {
-                           //PRE OWNED :  UNIT -USED VEHICLE SALES
-                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("USEDVHCLSALE");
-                        }
-                    
-                    }
-                    
-                    
-                    
-                    
-                    
-                }
-                
-                
-            break;
+                return generateCARVSP(fsTransCode);
+            case "INSURANCE":
         }
         return loJSON;
     }
     
+    private JSONObject generateCARVSP(String fsTransCode){
+        JSONObject loJSON = new JSONObject();
+        //Retrieve VSP 
+        VehicleSalesProposal loVSP = new VehicleSalesProposal(poGRider, pbWtParent, psBranchCd);
+        loJSON = loVSP.openTransaction(fsTransCode);
+        if(!"error".equals((String) loJSON.get("result"))){
+            //Re-compute amount
+            loVSP.computeAmount();
+
+            loJSON = poController.checkExistingCAR("c","VEHICLE SALES", fsTransCode);
+            //If CAR is already exist for the said transaction then retrieve the car to UPDATE
+            if(!"exist".equals((String) loJSON.get("result"))){
+                loJSON = newTransaction();
+            } else {
+                loJSON = openTransaction((String) loJSON.get("sTransNox"));
+            } 
+
+            /*1. CHARGED TO CUSTOMER Transactions */
+            if(!"error".equals((String) loJSON.get("result"))){
+                poController.getMasterModel().setPayerCde("c");
+                poController.getMasterModel().setSourceCD("VEHICLE SALES");
+                poController.getMasterModel().setReferNo(fsTransCode);
+                poController.getMasterModel().setClientID(loVSP.getMasterModel().getMasterModel().getClientID());
+                poController.getMasterModel().setGrossAmt(loVSP.getMasterModel().getMasterModel().getTranTotl());
+                poController.getMasterModel().setDiscAmt(loVSP.getTotalDiscount());
+                poController.getMasterModel().setTotalAmt(loVSP.getMasterModel().getMasterModel().getNetTTotl());
+            }
+
+            //Mandatory delete the CAR detail
+            loJSON = poDetail.deleteRecord(poController.getMasterModel().getTransNo());
+            if("error".equalsIgnoreCase((String)checkData(loJSON).get("result"))){
+                if (!pbWtParent) poGRider.rollbackTrans();
+                return checkData(poJSON);
+            }
+
+            //Proceed to save CAR Detail
+            String lsModelDesc = "NO MODEL DESCRIPTION YET";
+            String lsVhclCSPlateNo = "NO PLATE OR CS NUMBER YET";
+            if(loVSP.getMasterModel().getMasterModel().getSerialID() != null){
+                if(!loVSP.getMasterModel().getMasterModel().getSerialID().trim().isEmpty()){
+                    lsModelDesc = loVSP.getMasterModel().getMasterModel().getVhclFDsc();
+                    lsVhclCSPlateNo = loVSP.getMasterModel().getMasterModel().getPlateNo();
+                    if(loVSP.getMasterModel().getMasterModel().getPlateNo() == null){
+                        lsVhclCSPlateNo = loVSP.getMasterModel().getMasterModel().getCSNo();
+                    } else {
+                        if(loVSP.getMasterModel().getMasterModel().getPlateNo().trim().isEmpty()){
+                            lsVhclCSPlateNo = loVSP.getMasterModel().getMasterModel().getCSNo();
+                        }
+                    }
+                }
+            }
+
+            BigDecimal ldblDiscount = loVSP.getMasterModel().getMasterModel().getPromoDsc().add(loVSP.getMasterModel().getMasterModel().getBndleDsc())
+                                    .add(loVSP.getMasterModel().getMasterModel().getFleetDsc()).add(loVSP.getMasterModel().getMasterModel().getSPFltDsc())
+                                    .add(loVSP.getMasterModel().getMasterModel().getAddlDsc());//TODO Add insurance discount
+
+            //IDENTIFIED new and used vehicle sales 
+            poDetail.addDetail(poController.getMasterModel().getTransNo());
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getDownPaym());
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(ldblDiscount);
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getDownPaym().subtract(ldblDiscount));
+            if(loVSP.getMasterModel().getMasterModel().getIsVhclNw().equals("0")){ 
+                //BRAND NEW : UNIT -NEW VEHICLE SALES
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("NEWVHCLSALE"); //Account title
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsVhclCSPlateNo + lsModelDesc);//Particulars
+            } else {
+               //PRE OWNED :  UNIT -USED VEHICLE SALES
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("USEDVHCLSALE");//Account title
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsVhclCSPlateNo + lsModelDesc);//Particulars
+            }
+
+            //OMA&CMF amt has to be paid
+            //TODO
+
+            //ins TPL is c/o dealer
+            if(loVSP.getMasterModel().getMasterModel().getTPLStat().equals("3")){
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE"); //Account title
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE TPL");//Particulars
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getTPLAmt());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getTPLAmt());
+            }
+            //ins COMPREHENSIVE is c/o dealer
+            if(loVSP.getMasterModel().getMasterModel().getCompStat().equals("3")){
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE"); //Account title
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE COMPREHENSIVE");//Particulars
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getCompAmt());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getCompAmt());
+            }
+            //LTO if charge
+            if(loVSP.getMasterModel().getMasterModel().getLTOStat().equals("2")){
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LTO"); //Account title
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LTO");//Particulars
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getLTOAmt());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getLTOAmt());
+            }
+            //CHMO if charge
+            if(loVSP.getMasterModel().getMasterModel().getChmoStat().equals("2")){
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("CHMO"); //Account title CHATTEL MORTGAGE
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("CHATTEL MORTGAGE");//Particulars
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getChmoAmt());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getChmoAmt());
+            }
+
+            /*VSP LABOR DETAILS*/
+            String lsLabor = "";
+            String lsOtherLabor = "";
+            BigDecimal ldblOtherLaborAmt = new BigDecimal("0.00");
+            BigDecimal ldblOtherLaborDsc = new BigDecimal("0.00");
+            BigDecimal ldblOtherLaborTtl = new BigDecimal("0.00");
+            for(int lnCtr = 0;lnCtr <= loVSP.getVSPLaborList().size()-1;lnCtr++){
+                switch(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc().replace(" ", "").toUpperCase()){
+                    case "PERMASHINE":
+                        //LABOR : PERMASHINE if charge
+                    case "RUSTPROOF":
+                        //LABOR : RUSTPROOF if charge
+                    case "UNDERCOAT":
+                        //LABOR : UNDERCOAT if charge
+                    case "TINT":
+                        //LABOR : TINT if charge
+                        lsLabor = loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc();
+                    break;
+                    default:
+                        lsLabor = "";
+                        lsOtherLabor = "LABOR";
+                        ldblOtherLaborAmt = ldblOtherLaborAmt.add(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborAmt());
+                        ldblOtherLaborDsc = ldblOtherLaborDsc.add(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDscount());
+                        ldblOtherLaborTtl = ldblOtherLaborTtl.add(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getNtLabAmt());
+                    break;
+                }
+                if(!lsLabor.isEmpty()){
+                    poDetail.addDetail(poController.getMasterModel().getTransNo());
+                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc());//"LABOR" +  //Account title UNIT -LABOR
+    //                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("PERMASHINE");//Particulars}
+                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborAmt());
+                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDscount());
+                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getNtLabAmt());
+                }
+            } 
+
+            if(!lsOtherLabor.isEmpty()){
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LABOR"); //Account title UNIT -LABOR
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LABOR");//Particulars}
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(ldblOtherLaborAmt);
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(ldblOtherLaborDsc);
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(ldblOtherLaborTtl);
+            }
+
+            /*VSP PARTS DETAILS*/
+            String lsPartDescConcat = "";
+            for(int lnCtr = 0;lnCtr <= loVSP.getVSPPartsList().size()-1;lnCtr++){
+//                            if(loVSP.getVSPPartsModel().getDetailModel(lnCtr).getChrgeTyp().equals("2")){
+                    lsPartDescConcat = lsPartDescConcat + ", " + loVSP.getVSPPartsModel().getDetailModel(lnCtr).getPartDesc();
+//                            }
+            }
+
+            if(loVSP.getMasterModel().getMasterModel().getAccesAmt().compareTo(new BigDecimal("0.00")) > 0 ){
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("ACCESSORIES"); //Account title UNIT -PARTS AND ACCESSORIES
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsPartDescConcat);//Particulars
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getAccesAmt());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(loVSP.getMasterModel().getMasterModel().getToPrtDsc());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getAccesAmt().subtract(loVSP.getMasterModel().getMasterModel().getToPrtDsc()));
+            }
+
+            //other misc amt has to be paid
+            if(loVSP.getMasterModel().getMasterModel().getOthrChrg().compareTo(new BigDecimal("0.00")) > 0 ){
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("OTHER SALES"); //Account title
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(loVSP.getMasterModel().getMasterModel().getOthrDesc());//Particulars
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getOthrChrg());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getOthrChrg());
+            }
+
+            //freight amt has to be paid
+            if(loVSP.getMasterModel().getMasterModel().getFrgtChrg().compareTo(new BigDecimal("0.00")) > 0 ){
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("FREIGHT"); //Account title FREIGHT AND DELIVERY CHARGE 
+//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("FREIGHT");//Particulars
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getFrgtChrg());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getFrgtChrg());
+            }
+
+        }
+
+        loJSON = saveTransaction();
+        if("error".equals((String) loJSON.get("result"))){
+            return loJSON;
+        }
+        
+        /* END OF 1 -CHARGED to Customer */
+        poDetail.resetDetail();
+        
+        /*2. CHARGED TO BANK Transactions */
+        if(loVSP.getVSPFinanceList().size() >= 0){
+            if(loVSP.getVSPFinanceModel().getVSPFinanceModel().getFinAmt().compareTo(new BigDecimal("0.00")) > 0){
+                loJSON = poController.checkExistingCAR("b","VEHICLE SALES", fsTransCode);
+                //If CAR is already exist for the said transaction then retrieve the car to UPDATE
+                if(!"exist".equals((String) loJSON.get("result"))){
+                    loJSON = newTransaction();
+                } else {
+                    loJSON = openTransaction((String) loJSON.get("sTransNox"));
+                } 
+
+                /*1. CHARGED TO CUSTOMER Transactions */
+                if(!"error".equals((String) loJSON.get("result"))){
+                    poController.getMasterModel().setPayerCde("b");
+                    poController.getMasterModel().setSourceCD("VEHICLE SALES");
+                    poController.getMasterModel().setReferNo(fsTransCode);
+                    poController.getMasterModel().setBrBankCd(loVSP.getVSPFinanceModel().getVSPFinanceModel().getBankID());
+                    poController.getMasterModel().setGrossAmt(loVSP.getVSPFinanceModel().getVSPFinanceModel().getFinAmt());
+                    poController.getMasterModel().setDiscAmt(new BigDecimal("0.00"));
+                    poController.getMasterModel().setTotalAmt(loVSP.getVSPFinanceModel().getVSPFinanceModel().getFinAmt());
+                }
+
+                //Mandatory delete the CAR detail
+                loJSON = poDetail.deleteRecord(poController.getMasterModel().getTransNo());
+                if("error".equalsIgnoreCase((String)checkData(loJSON).get("result"))){
+                    if (!pbWtParent) poGRider.rollbackTrans();
+                    return checkData(poJSON);
+                }
+                
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                if(loVSP.getMasterModel().getMasterModel().getIsVhclNw().equals("0")){ 
+                    //BRAND NEW : UNIT -NEW VEHICLE SALES
+                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("NEWPROCEED"); //Account title :NEWVHCLSALE
+    //                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsVhclCSPlateNo + lsModelDesc);//Particulars
+                } else {
+                   //PRE OWNED :  UNIT -USED VEHICLE SALES
+                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("USEDPROCEED");//Account title
+    //                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsVhclCSPlateNo + lsModelDesc);//Particulars
+                }
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getVSPFinanceModel().getVSPFinanceModel().getFinAmt());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getVSPFinanceModel().getVSPFinanceModel().getFinAmt());
+                
+                loJSON = saveTransaction();
+                if("error".equals((String) loJSON.get("result"))){
+                    return loJSON;
+                }
+            }
+        } else {
+            loJSON = poController.checkExistingCAR("b","VEHICLE SALES", fsTransCode);
+            //If CAR is already exist for the said transaction then retrieve the car to UPDATE
+            if("exist".equals((String) loJSON.get("result"))){
+                loJSON = openTransaction((String) loJSON.get("sTransNox"));
+                if(!"error".equals((String) loJSON.get("result"))){
+                    //UPDATE EXISTING CAR OF VSP FINANCE ;
+                    if(poController.getMasterModel().getRemarks() != null){
+                        poController.getMasterModel().setRemarks(poController.getMasterModel().getRemarks() + "; BANK FINANCE AMT WAS CHANGED INTO 0.00");
+                    } else {
+                        poController.getMasterModel().setRemarks("BANK FINANCE AMT WAS CHANGED INTO 0.00");
+                    }
+                    //TODO : SET TO CANCEL CAR 
+
+                    loJSON = saveTransaction();
+                    if("error".equals((String) loJSON.get("result"))){
+                        return loJSON;
+                    }
+                }
+            } 
+        
+        }
+        /* END OF 2 -CHARGED to BANK */
+        
+        /*3. CHARGED TO SUPPLIER Transactions (Other Deduct Amount)*/
+         //check for changes in Other Deduct amount (ldbl_recfromotheramt). This column's value can be altered. Cancel existing Cache Receivable entry for Bank if this scenario happens
+         
+	/* END OF 3 -CHARGED to Supplier */
+        
+        //source group: VEHICLE SALES INCENTIVES
+        
+        return loJSON;
+    }
     
 }

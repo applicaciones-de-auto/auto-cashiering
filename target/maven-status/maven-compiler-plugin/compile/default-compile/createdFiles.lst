@@ -5,4 +5,6 @@ org\guanzon\auto\controller\cashiering\VehicleSalesInvoice_Source.class
 org\guanzon\auto\main\cashiering\VehicleSalesInvoice.class
 org\guanzon\auto\controller\cashiering\SalesInvoice_Source.class
 org\guanzon\auto\resultSet2XML\cashiering\VehicleSalesInvoiceSource.class
+org\guanzon\auto\controller\cashiering\CashierReceivables_Detail.class
+org\guanzon\auto\resultSet2XML\cashiering\CashierReceivablesMaster.class
 org\guanzon\auto\resultSet2XML\cashiering\SalesInvoiceMaster.class
