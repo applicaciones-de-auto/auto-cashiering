@@ -248,6 +248,7 @@ public class CashierReceivables implements GTransaction{
 
             /*1. CHARGED TO CUSTOMER Transactions */
             if(!"error".equals((String) loJSON.get("result"))){
+                poController.getMasterModel().setTransactDte(loVSP.getMasterModel().getMasterModel().getTransactDte());
                 poController.getMasterModel().setPayerCde("c");
                 poController.getMasterModel().setSourceCD("VEHICLE SALES");
                 poController.getMasterModel().setReferNo(fsTransCode);
@@ -445,6 +446,7 @@ public class CashierReceivables implements GTransaction{
 
                 /*1. CHARGED TO CUSTOMER Transactions */
                 if(!"error".equals((String) loJSON.get("result"))){
+                    poController.getMasterModel().setTransactDte(loVSP.getMasterModel().getMasterModel().getTransactDte());
                     poController.getMasterModel().setPayerCde("b");
                     poController.getMasterModel().setSourceCD("VEHICLE SALES");
                     poController.getMasterModel().setReferNo(fsTransCode);
