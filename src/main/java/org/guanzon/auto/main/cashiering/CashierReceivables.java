@@ -436,7 +436,7 @@ public class CashierReceivables implements GTransaction{
             poDetail.resetDetail();
 
             /*2. CHARGED TO BANK Transactions */
-            if(loVSP.getVSPFinanceList().size() >= 0){
+            if(loVSP.getVSPFinanceList().size() > 0){
                 if(loVSP.getVSPFinanceModel().getVSPFinanceModel().getFinAmt().compareTo(new BigDecimal("0.00")) > 0){
                     loJSON = poController.checkExistingCAR("b","VEHICLE SALES", fsTransCode);
                     //If CAR is already exist for the said transaction then retrieve the car to UPDATE
