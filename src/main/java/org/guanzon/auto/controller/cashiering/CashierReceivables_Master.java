@@ -332,7 +332,7 @@ public class CashierReceivables_Master implements GTransaction{
                 }
 
                 MiscUtil.close(loRS);
-                loJSON.put("result", "exist");
+                loJSON.put("result", "success");
                 loJSON.put("sTransNox", lsID);
                 return loJSON;
             }
