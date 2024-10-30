@@ -11,6 +11,7 @@ import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.controller.cashiering.CashierReceivables_Detail;
 import org.guanzon.auto.controller.cashiering.CashierReceivables_Master;
+import org.guanzon.auto.main.insurance.InsurancePolicyApplication;
 import org.guanzon.auto.main.sales.VehicleSalesProposal;
 import org.json.simple.JSONObject;
 
@@ -203,6 +204,10 @@ public class CashierReceivables implements GTransaction{
     public CashierReceivables_Master getMasterModel() {
         return poController;
     }
+    
+    public CashierReceivables_Detail getDetailModel() {
+        return poDetail;
+    }
     @Override
     public void setTransactionStatus(String string) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -223,8 +228,17 @@ public class CashierReceivables implements GTransaction{
                 VEHICLE SALES transactions were grouped into
                 1. Charged to Customer
                 2. Charged to Bank -proceeds for Financing and Purchase Order payment mode */
+//                CashierReceivablesVSP loVSP = new CashierReceivablesVSP(poGRider, pbWtParent, psBranchCd);
+//                loVSP.setObject(this);
                 return generateCARVSP(fsTransCode);
-            case "INSURANCE":
+            case "POLICY":
+                //source group: INSURANCE SALES
+                /*Note for INSURANCE SALES 
+
+                Triggered from Insurance Policy Application WIndow;
+                Will create a Receivable entry for Non-vehicle Sales Customer only. Receivable entry for Insurance Policy Application coming from Vehicle Sales 
+                will be generated from VSP form.
+                */
         }
         return loJSON;
     }
@@ -239,10 +253,10 @@ public class CashierReceivables implements GTransaction{
             loVSP.computeAmount();
 
             loJSON = poController.checkExistingCAR("c","VEHICLE SALES", fsTransCode);
-            //If CAR is already exist for the said transaction then retrieve the car to UPDATE
             if(!"success".equals((String) loJSON.get("result"))){
                 loJSON = newTransaction();
             } else {
+                //If CAR is already exist for the said transaction then retrieve the car to UPDATE
                 loJSON = openTransaction((String) loJSON.get("sTransNox"));
             } 
 
@@ -261,7 +275,6 @@ public class CashierReceivables implements GTransaction{
             //Mandatory delete the CAR detail
             loJSON = poDetail.deleteRecord(poController.getMasterModel().getTransNo());
             if("error".equalsIgnoreCase((String)checkData(loJSON).get("result"))){
-                if (!pbWtParent) poGRider.rollbackTrans();
                 return checkData(poJSON);
             }
 
@@ -288,17 +301,17 @@ public class CashierReceivables implements GTransaction{
 
             //IDENTIFIED new and used vehicle sales 
             poDetail.addDetail(poController.getMasterModel().getTransNo());
-            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getDownPaym());
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getTranTotl());
             poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(ldblDiscount);
-            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getDownPaym().subtract(ldblDiscount));
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getTranTotl().subtract(ldblDiscount));
             if(loVSP.getMasterModel().getMasterModel().getIsVhclNw().equals("0")){ 
                 //BRAND NEW : UNIT -NEW VEHICLE SALES
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("UNIT -NEW VEHICLE SALES"); //Account title
-//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsVhclCSPlateNo + lsModelDesc);//Particulars
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsVhclCSPlateNo + lsModelDesc);//Particulars
             } else {
                //PRE OWNED :  UNIT -USED VEHICLE SALES
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("UNIT -USED VEHICLE SALES");//Account title
-//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsVhclCSPlateNo + lsModelDesc);//Particulars
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsVhclCSPlateNo + lsModelDesc);//Particulars
             }
 
             //OMA&CMF amt has to be paid
@@ -308,7 +321,7 @@ public class CashierReceivables implements GTransaction{
             if(loVSP.getMasterModel().getMasterModel().getTPLStat().equals("3")){
                 poDetail.addDetail(poController.getMasterModel().getTransNo());
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE"); //Account title
-//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE TPL");//Particulars
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE TPL");//Particulars
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getTPLAmt());
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getTPLAmt());
@@ -317,7 +330,7 @@ public class CashierReceivables implements GTransaction{
             if(loVSP.getMasterModel().getMasterModel().getCompStat().equals("3")){
                 poDetail.addDetail(poController.getMasterModel().getTransNo());
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE"); //Account title
-//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE COMPREHENSIVE");//Particulars
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE COMPREHENSIVE");//Particulars
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getCompAmt());
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getCompAmt());
@@ -326,7 +339,7 @@ public class CashierReceivables implements GTransaction{
             if(loVSP.getMasterModel().getMasterModel().getLTOStat().equals("2")){
                 poDetail.addDetail(poController.getMasterModel().getTransNo());
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LTO"); //Account title
-//                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LTO");//Particulars
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LTO");//Particulars
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getLTOAmt());
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getLTOAmt());
@@ -349,13 +362,13 @@ public class CashierReceivables implements GTransaction{
             BigDecimal ldblOtherLaborTtl = new BigDecimal("0.00");
             for(int lnCtr = 0;lnCtr <= loVSP.getVSPLaborList().size()-1;lnCtr++){
                 switch(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc().replace(" ", "").toUpperCase()){
-                    case "LABOR : PERMASHINE":
+                    case "PERMASHINE":
                         //LABOR : PERMASHINE if charge
-                    case "LABOR : RUSTPROOF":
+                    case "RUSTPROOF":
                         //LABOR : RUSTPROOF if charge
-                    case "LABOR : UNDERCOAT":
+                    case "UNDERCOAT":
                         //LABOR : UNDERCOAT if charge
-                    case "LABOR : TINT":
+                    case "TINT":
                         //LABOR : TINT if charge
                         lsLabor = loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc();
                     break;
@@ -616,6 +629,59 @@ public class CashierReceivables implements GTransaction{
         //END OF VSP
         }
         return loJSON;
+    }
+    
+    private JSONObject generateCARPolicy(String fsTransCode){
+        JSONObject loJSON = new JSONObject();
+        //Retrieve Insurance Application
+        InsurancePolicyApplication loEntity = new InsurancePolicyApplication(poGRider, pbWtParent, psBranchCd);
+        loJSON = loEntity.openTransaction(fsTransCode);
+        if(!"error".equals((String) loJSON.get("result"))){
+            //Re-compute amount
+            loEntity.computeAmount();
+
+            loJSON = poController.checkExistingCAR("c","INSURANCE SALES", fsTransCode);
+            if(!"success".equals((String) loJSON.get("result"))){
+                loJSON = newTransaction();
+            } else {
+                //If CAR is already exist for the said transaction then retrieve the car to UPDATE
+                loJSON = openTransaction((String) loJSON.get("sTransNox"));
+            } 
+
+            /*1. CHARGED TO CUSTOMER Transactions */
+            if(!"error".equals((String) loJSON.get("result"))){
+                poController.getMasterModel().setTransactDte(loEntity.getMasterModel().getMasterModel().getTransactDte());
+                poController.getMasterModel().setPayerCde("c");
+                poController.getMasterModel().setSourceCD("INSURANCE SALES");
+                poController.getMasterModel().setReferNo(fsTransCode);
+                poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
+                poController.getMasterModel().setGrossAmt(loEntity.getMasterModel().getMasterModel().getTotalAmt());
+//                poController.getMasterModel().setDiscAmt(loEntity.getMasterModel().getMasterModel().getDiscount()); 
+                poController.getMasterModel().setTotalAmt(loEntity.getMasterModel().getMasterModel().getTotalAmt());
+            }
+
+            //Mandatory delete the CAR detail
+            loJSON = poDetail.deleteRecord(poController.getMasterModel().getTransNo());
+            if("error".equalsIgnoreCase((String)checkData(loJSON).get("result"))){
+                return checkData(poJSON);
+            }
+
+            BigDecimal ldblDiscount = new BigDecimal("0.00");
+            
+            poDetail.addDetail(poController.getMasterModel().getTransNo());
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE"); //Account title
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE TPL");//Particulars
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loEntity.getMasterModel().getMasterModel().getTPLAmt());
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loEntity.getMasterModel().getMasterModel().getTPLAmt());
+            
+            
+            loJSON = saveTransaction();
+            if("error".equals((String) loJSON.get("result"))){
+                return loJSON;
+            }
+        }
+        return loJSON; 
     }
     
 }
