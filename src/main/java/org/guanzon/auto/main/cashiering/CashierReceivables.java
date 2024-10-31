@@ -6,13 +6,19 @@
 package org.guanzon.auto.main.cashiering;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
 import org.guanzon.appdriver.base.GRider;
+import org.guanzon.appdriver.base.MiscUtil;
+import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.controller.cashiering.CashierReceivables_Detail;
 import org.guanzon.auto.controller.cashiering.CashierReceivables_Master;
 import org.guanzon.auto.main.insurance.InsurancePolicyApplication;
+import org.guanzon.auto.main.sales.Inquiry;
 import org.guanzon.auto.main.sales.VehicleSalesProposal;
+import org.guanzon.auto.resultSet2XML.cashiering.CashierReceivablesMaster;
 import org.json.simple.JSONObject;
 
 /**
@@ -30,6 +36,7 @@ public class CashierReceivables implements GTransaction{
     
     CashierReceivables_Master poController;
     CashierReceivables_Detail poDetail;
+    ArrayList<CashierReceivables_Master> paDetail;
     
     public CashierReceivables(GRider foAppDrver, boolean fbWtParent, String fsBranchCd){
         poController = new CashierReceivables_Master(foAppDrver,fbWtParent,fsBranchCd);
@@ -208,10 +215,17 @@ public class CashierReceivables implements GTransaction{
     public CashierReceivables_Detail getDetailModel() {
         return poDetail;
     }
+    
     @Override
     public void setTransactionStatus(String string) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+    
+    public JSONObject loadTransaction(String fsFrom, String fsTo){
+        return poController.loadTransaction(fsFrom, fsTo);
+    }
+    
+    public ArrayList getMasterList(){return poController.getDetailList();}
     
     /**
      * Check Existing CAR
@@ -221,7 +235,6 @@ public class CashierReceivables implements GTransaction{
      */
     public JSONObject generateCAR(String fsTransSource, String fsTransCode){
         JSONObject loJSON = new JSONObject();
-        String lsCARCode = "";
         switch(fsTransSource){
             case "VSP"://source group: VEHICLE SALES
                 /*Note for VEHICLE SALES
@@ -231,14 +244,20 @@ public class CashierReceivables implements GTransaction{
 //                CashierReceivablesVSP loVSP = new CashierReceivablesVSP(poGRider, pbWtParent, psBranchCd);
 //                loVSP.setObject(this);
                 return generateCARVSP(fsTransCode);
-            case "POLICY":
-                //source group: INSURANCE SALES
+            case "VSA": //source group: VEHICLE SALES
+                /*Note for VEHICLE SALES ADVANCES
+
+                Will create a Receivable entry for "approved" Customer Advances for Vehicle Purchase only
+                */
+                return generateCARVSA(fsTransCode);
+            case "POLICY"://source group: INSURANCE SALES
                 /*Note for INSURANCE SALES 
 
                 Triggered from Insurance Policy Application WIndow;
                 Will create a Receivable entry for Non-vehicle Sales Customer only. Receivable entry for Insurance Policy Application coming from Vehicle Sales 
                 will be generated from VSP form.
                 */
+                return generateCARPolicy(fsTransCode);
         }
         return loJSON;
     }
@@ -558,7 +577,7 @@ public class CashierReceivables implements GTransaction{
                             } else {
                 //                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(SALES INCENTIVE : lsVhclCSPlateNo + lsModelDesc);//Particulars
                             }
-                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("DEALER INCENTIVES");//Account title
+                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("SALES INCENTIVES");//Account title
                             poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getSlsInAmt());
                             poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
                             poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getSlsInAmt());
@@ -620,7 +639,7 @@ public class CashierReceivables implements GTransaction{
             /*******************************************************************************************/
             /*3. CHARGED TO SUPPLIER Transactions (Other Deduct Amount)*/
              //check for changes in Other Deduct amount (ldbl_recfromotheramt). This column's value can be altered. Cancel existing Cache Receivable entry for Bank if this scenario happens
-
+             
             /* END OF 3 -CHARGED to Supplier */
             /*******************************************************************************************/
            
@@ -631,12 +650,72 @@ public class CashierReceivables implements GTransaction{
         return loJSON;
     }
     
+    private JSONObject generateCARVSA(String fsTransCode){
+        JSONObject loJSON = new JSONObject();
+        //Retrieve Insurance Application
+        Inquiry loEntity = new Inquiry(poGRider, pbWtParent, psBranchCd);
+        loJSON = loEntity.getReservationModel().openRecord(fsTransCode);
+        if(!"error".equals((String) loJSON.get("result"))){
+            int lnSize = loEntity.getReservationList().size()-1;
+            if(lnSize == 0){
+                loJSON = poController.checkExistingCAR("c","VEHICLE SALES", fsTransCode);
+                if(!"success".equals((String) loJSON.get("result"))){
+                    loJSON = newTransaction();
+                } else {
+                    //If CAR is already exist for the said transaction then retrieve the car to UPDATE
+                    loJSON = openTransaction((String) loJSON.get("sTransNox"));
+                } 
+
+                /*1. CHARGED TO CUSTOMER Transactions */
+                if(!"error".equals((String) loJSON.get("result"))){
+                    poController.getMasterModel().setTransactDte(loEntity.getReservationModel().getDetailModel(lnSize).getApproveDte());
+                    poController.getMasterModel().setPayerCde("c");
+                    poController.getMasterModel().setSourceCD("VEHICLE SALES");
+                    poController.getMasterModel().setReferNo(fsTransCode);
+                    poController.getMasterModel().setClientID(loEntity.getReservationModel().getDetailModel(lnSize).getClientID());
+                    poController.getMasterModel().setGrossAmt(new BigDecimal(loEntity.getReservationModel().getDetailModel(lnSize).getAmount()));
+                    poController.getMasterModel().setDiscAmt(new BigDecimal("0.00")); 
+                    poController.getMasterModel().setTotalAmt(new BigDecimal(loEntity.getReservationModel().getDetailModel(lnSize).getAmount()));
+                }
+
+                //Mandatory delete the CAR detail
+                loJSON = poDetail.deleteRecord(poController.getMasterModel().getTransNo());
+                if("error".equalsIgnoreCase((String)checkData(loJSON).get("result"))){
+                    return checkData(poJSON);
+                }
+
+                BigDecimal ldblDiscount = new BigDecimal("0.00");
+
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("ADVANCES"); //Account title
+    //                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE TPL");//Particulars
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(new BigDecimal(loEntity.getReservationModel().getDetailModel(lnSize).getAmount()));
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal("0.00"));
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(new BigDecimal(loEntity.getReservationModel().getDetailModel(lnSize).getAmount()));
+
+                loJSON = saveTransaction();
+                if("error".equals((String) loJSON.get("result"))){
+                    return loJSON;
+                }
+            }
+        }
+        return loJSON;
+    }
+    
     private JSONObject generateCARPolicy(String fsTransCode){
         JSONObject loJSON = new JSONObject();
         //Retrieve Insurance Application
         InsurancePolicyApplication loEntity = new InsurancePolicyApplication(poGRider, pbWtParent, psBranchCd);
         loJSON = loEntity.openTransaction(fsTransCode);
         if(!"error".equals((String) loJSON.get("result"))){
+            
+            //DO NOT PROCEED when transaction is related to VSP
+            if(loEntity.getMasterModel().getMasterModel().getVSPTrnNo() != null){
+                if(!loEntity.getMasterModel().getMasterModel().getVSPTrnNo().trim().isEmpty()){
+                    return loJSON;
+                }
+            }
+            
             //Re-compute amount
             loEntity.computeAmount();
 
@@ -671,10 +750,9 @@ public class CashierReceivables implements GTransaction{
             poDetail.addDetail(poController.getMasterModel().getTransNo());
             poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE"); //Account title
 //                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("INSURANCE TPL");//Particulars
-            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loEntity.getMasterModel().getMasterModel().getTPLAmt());
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loEntity.getMasterModel().getMasterModel().getTotalAmt());
             poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(new BigDecimal(0.00));
-            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loEntity.getMasterModel().getMasterModel().getTPLAmt());
-            
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loEntity.getMasterModel().getMasterModel().getTotalAmt());
             
             loJSON = saveTransaction();
             if("error".equals((String) loJSON.get("result"))){

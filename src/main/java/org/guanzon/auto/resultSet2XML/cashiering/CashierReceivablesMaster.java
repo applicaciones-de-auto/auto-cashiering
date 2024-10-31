@@ -57,9 +57,9 @@ public class CashierReceivablesMaster  {
                         + " , a.nAmtPaidx "    
                         + " , CASE "
                         + "     WHEN a.cPayerCde = 'a' THEN '' " //ASSOCIATE
-                        + "     WHEN a.cPayerCde = 'b' THEN '' " //BANK
-                        + "     WHEN a.cPayerCde = 'c' THEN '' " //CUSTOMER
-                        + "     WHEN a.cPayerCde = 'i' THEN '' " //INSURANCE
+                        + "     WHEN a.cPayerCde = 'b' THEN CONCAT(k.sBankName, ' ', h.sBrBankNm) " //BANK
+                        + "     WHEN a.cPayerCde = 'c' THEN b.sCompnyNm " //CUSTOMER
+                        + "     WHEN a.cPayerCde = 'i' THEN CONCAT(o.sInsurNme, ' ', l.sBrInsNme) " //INSURANCE
                         + "     WHEN a.cPayerCde = 's' THEN '' " //SUPPLIER                                  
                         + " 	ELSE ''  "                                                          
                         + "    END AS sPayerNme " 

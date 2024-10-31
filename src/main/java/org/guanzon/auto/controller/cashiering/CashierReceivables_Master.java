@@ -11,6 +11,8 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.guanzon.appdriver.agent.ShowDialogFX;
@@ -42,6 +44,7 @@ public class CashierReceivables_Master implements GTransaction{
     public JSONObject poJSON;
     
     Model_Cashier_Receivables poModel;
+    ArrayList<Model_Cashier_Receivables> paDetail;
     
     public CashierReceivables_Master(GRider foGRider, boolean fbWthParent, String fsBranchCd) {
         poGRider = foGRider;
@@ -340,6 +343,61 @@ public class CashierReceivables_Master implements GTransaction{
             Logger.getLogger(CashierReceivables_Master.class.getName()).log(Level.SEVERE, null, ex);
         }
         return loJSON;
+    }
+    
+     public ArrayList<Model_Cashier_Receivables> getDetailList(){
+        if(paDetail == null){
+           paDetail = new ArrayList<>();
+        }
+        return paDetail;
+    }
+    public void setDetailList(ArrayList<Model_Cashier_Receivables> foObj){this.paDetail = foObj;}
+    
+    public void setDetail(int fnRow, int fnIndex, Object foValue){ paDetail.get(fnRow).setValue(fnIndex, foValue);}
+    public void setDetail(int fnRow, String fsIndex, Object foValue){ paDetail.get(fnRow).setValue(fsIndex, foValue);}
+    public Object getDetail(int fnRow, int fnIndex){return paDetail.get(fnRow).getValue(fnIndex);}
+    public Object getDetail(int fnRow, String fsIndex){return paDetail.get(fnRow).getValue(fsIndex);}
+    
+    public Model_Cashier_Receivables getDetailModel(int fnRow) {
+        return paDetail.get(fnRow);
+    }
+    
+    public JSONObject loadTransaction(String fsFrom, String fsTo){
+        paDetail = new ArrayList<>();
+        poJSON = new JSONObject();
+        String lsSQL = MiscUtil.addCondition(poModel.getSQL(), " DATE(a.dTransact) >= " + SQLUtil.toSQL(fsFrom)
+                                                + " AND DATE(a.dTransact) <= " + SQLUtil.toSQL(fsTo)
+                                                + " GROUP BY a.sTransNox "
+                                                + " ORDER BY a.dTransact ASC "
+                                                );
+                
+        System.out.println(lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        
+       try {
+            int lnctr = 0;
+            if (MiscUtil.RecordCount(loRS) > 0) {
+                while(loRS.next()){
+                        paDetail.add(new Model_Cashier_Receivables(poGRider));
+                        paDetail.get(paDetail.size() - 1).openRecord( loRS.getString("sTransNox"));
+                        
+                        pnEditMode = EditMode.UPDATE;
+                        lnctr++;
+                        poJSON.put("result", "success");
+                        poJSON.put("message", "Record loaded successfully.");
+                    } 
+                
+            }else{
+                poJSON.put("result", "error");
+                poJSON.put("continue", true);
+                poJSON.put("message", "No record selected.");
+            }
+            MiscUtil.close(loRS);
+        } catch (SQLException e) {
+            poJSON.put("result", "error");
+            poJSON.put("message", e.getMessage());
+        }
+        return poJSON;
     }
     
     private static String xsDateShort(java.util.Date fdValue) {

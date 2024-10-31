@@ -1,9 +1,14 @@
 
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.auto.main.cashiering.CashierReceivables;
 import org.json.simple.JSONObject;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -138,36 +143,37 @@ public class CashierReceivablesTest {
 //        System.out.println("------------------------------RETRIEVAL--------------------------------------");
 //        System.out.println("--------------------------------------------------------------------");
 //        
-//        json = model.openTransaction("M001BA240001");
+//        json = model.openTransaction("M001CAR24001");
 //        
 //        if (!"success".equals((String) json.get("result"))){
 //            result = false;
 //        } else {
 //            System.out.println("--------------------------------------------------------------------");
-//            System.out.println("BANK APPLICATION");
+//            System.out.println("CASHIER RECEIVABLES");
 //            System.out.println("--------------------------------------------------------------------");
-//            System.out.println("sTransNox  :  " + model.getMaster("sTransNox"));
-//            System.out.println("sApplicNo  :  " + model.getMaster("sApplicNo"));
-//            System.out.println("dAppliedx  :  " + model.getMaster("dAppliedx"));
-//            System.out.println("dApproved  :  " + model.getMaster("dApproved"));
-//            System.out.println("cPayModex  :  " + model.getMaster("cPayModex"));
-//            System.out.println("sSourceCD  :  " + model.getMaster("sSourceCD"));
-//            System.out.println("sSourceNo  :  " + model.getMaster("sSourceNo"));
-//            System.out.println("sBrBankID  :  " + model.getMaster("sBrBankID"));
-//            System.out.println("sRemarksx  :  " + model.getMaster("sRemarksx"));
-//            System.out.println("cTranStat  :  " + model.getMaster("cTranStat"));
-//            System.out.println("sEntryByx  :  " + model.getMaster("sEntryByx"));
-//            System.out.println("dEntryDte  :  " + model.getMaster("dEntryDte"));
-//            System.out.println("sModified  :  " + model.getMaster("sModified"));
-//            System.out.println("dModified  :  " + model.getMaster("dModified"));
-//            System.out.println("sCancelld  :  " + model.getMaster("sCancelld"));
-//            System.out.println("dCancelld  :  " + model.getMaster("dCancelld"));
-//            System.out.println("sBrBankNm  :  " + model.getMaster("sBrBankNm"));
-//            System.out.println("sBankIDxx  :  " + model.getMaster("sBankIDxx"));
-//            System.out.println("sBankName  :  " + model.getMaster("sBankName"));
-//            System.out.println("sTownName  :  " + model.getMaster("sTownName"));
-//            System.out.println("sProvName  :  " + model.getMaster("sProvName"));
-//            
+//            System.out.println("sTransNox  :  " + model.getMasterModel().getMasterModel().getTransNo());        
+//            System.out.println("dTransact  :  " + model.getMasterModel().getMasterModel().getTransactDte());      
+//            System.out.println("sClientID  :  " + model.getMasterModel().getMasterModel().getClientID());       
+//            System.out.println("sBrBankCd  :  " + model.getMasterModel().getMasterModel().getBrBankCd());       
+//            System.out.println("sBrInsCde  :  " + model.getMasterModel().getMasterModel().getBrInsCde());       
+//            System.out.println("sRemarksx  :  " + model.getMasterModel().getMasterModel().getRemarks());        
+//            System.out.println("sReferNox  :  " + model.getMasterModel().getMasterModel().getReferNo());        
+//            System.out.println("sSourceCD  :  " + model.getMasterModel().getMasterModel().getSourceCD());       
+//            System.out.println("cPayerCde  :  " + model.getMasterModel().getMasterModel().getPayerCde());       
+//            System.out.println("nGrossAmt  :  " + model.getMasterModel().getMasterModel().getGrossAmt());       
+//            System.out.println("nDiscAmtx  :  " + model.getMasterModel().getMasterModel().getDiscAmt());        
+//            System.out.println("nDeductnx  :  " + model.getMasterModel().getMasterModel().getDiscAmt());        
+//            System.out.println("nTotalAmt  :  " + model.getMasterModel().getMasterModel().getTotalAmt());       
+//            System.out.println("nChckPayx  :  " + model.getMasterModel().getMasterModel().getChckPay());        
+//            System.out.println("nAmtPaidx  :  " + model.getMasterModel().getMasterModel().getAmtPaid());        
+//            System.out.println("sPayerNme  :  " + model.getMasterModel().getMasterModel().getPayerNme());         
+//            System.out.println("sOwnrNmxx  :  " + model.getMasterModel().getMasterModel().getOwnrNm());         
+//            System.out.println("cClientTp  :  " + model.getMasterModel().getMasterModel().getClientTp());       
+//            System.out.println("sAddressx  :  " + model.getMasterModel().getMasterModel().getAddress());        
+//            System.out.println("sBankName  :  " + model.getMasterModel().getMasterModel().getBankName());       
+//            System.out.println("sBankAddr  :  " + model.getMasterModel().getMasterModel().getBankAddr());       
+//            System.out.println("sInsNamex  :  " + model.getMasterModel().getMasterModel().getInsName());         
+//            System.out.println("sInsAddrx  :  " + model.getMasterModel().getMasterModel().getInsAddr());   
 //            
 //            result = true;
 //        }
@@ -224,6 +230,76 @@ public class CashierReceivablesTest {
 //        }
 //        assertTrue(result);
 //        //assertFalse(result);
+//    }
+    
+//    private static String xsDateShort(Date fdValue) {
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+//        String date = sdf.format(fdValue);
+//        return date;
+//    }
+//
+//    private static String xsDateShort(String fsValue) throws org.json.simple.parser.ParseException, java.text.ParseException {
+//        SimpleDateFormat fromUser = new SimpleDateFormat("MMMM dd, yyyy");
+//        SimpleDateFormat myFormat = new SimpleDateFormat("yyyy-MM-dd");
+//        String lsResult = "";
+//        lsResult = myFormat.format(fromUser.parse(fsValue));
+//        return lsResult;
+//    }
+//    
+//    /*Convert Date to String*/
+//    private LocalDate strToDate(String val) {
+//        DateTimeFormatter date_formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//        LocalDate localDate = LocalDate.parse(val, date_formatter);
+//        return localDate;
+//    }
+//    
+//    @Test
+//    public void test04loadRecord(){
+////        System.out.println("--------------------------------------------------------------------");
+////        System.out.println("------------------------------LOAD TRANSACTIONS--------------------------------------");
+////        System.out.println("--------------------------------------------------------------------");
+//
+//        json = model.loadTransaction("2024-01-01", xsDateShort(instance.getServerDate()));
+//        System.err.println((String) json.get("message"));
+//        
+//        if (!"success".equals((String) json.get("result"))){
+//            System.err.println((String) json.get("message"));
+//            result = false;
+//        } else {
+//            System.out.println("--------------------------------------------------------------------");
+//            System.out.println("CASHIER RECEIVABLES");
+//            System.out.println("--------------------------------------------------------------------");
+//            for(int lnCtr = 0; lnCtr <= model.getMasterList().size()-1; lnCtr++){
+//                System.out.println("sTransNox  :  " + model.getMasterModel().getDetailModel(lnCtr).getTransNo());    
+//                System.out.println("dTransact  :  " + model.getMasterModel().getDetailModel(lnCtr).getTransactDte());
+//                System.out.println("sClientID  :  " + model.getMasterModel().getDetailModel(lnCtr).getClientID());   
+//                System.out.println("sBrBankCd  :  " + model.getMasterModel().getDetailModel(lnCtr).getBrBankCd());   
+//                System.out.println("sBrInsCde  :  " + model.getMasterModel().getDetailModel(lnCtr).getBrInsCde());   
+//                System.out.println("sRemarksx  :  " + model.getMasterModel().getDetailModel(lnCtr).getRemarks());    
+//                System.out.println("sReferNox  :  " + model.getMasterModel().getDetailModel(lnCtr).getReferNo());    
+//                System.out.println("sSourceCD  :  " + model.getMasterModel().getDetailModel(lnCtr).getSourceCD());   
+//                System.out.println("cPayerCde  :  " + model.getMasterModel().getDetailModel(lnCtr).getPayerCde());   
+//                System.out.println("nGrossAmt  :  " + model.getMasterModel().getDetailModel(lnCtr).getGrossAmt());   
+//                System.out.println("nDiscAmtx  :  " + model.getMasterModel().getDetailModel(lnCtr).getDiscAmt());    
+//                System.out.println("nDeductnx  :  " + model.getMasterModel().getDetailModel(lnCtr).getDiscAmt());    
+//                System.out.println("nTotalAmt  :  " + model.getMasterModel().getDetailModel(lnCtr).getTotalAmt());   
+//                System.out.println("nChckPayx  :  " + model.getMasterModel().getDetailModel(lnCtr).getChckPay());    
+//                System.out.println("nAmtPaidx  :  " + model.getMasterModel().getDetailModel(lnCtr).getAmtPaid());    
+//                System.out.println("sPayerNme  :  " + model.getMasterModel().getDetailModel(lnCtr).getPayerNme());   
+//                System.out.println("sOwnrNmxx  :  " + model.getMasterModel().getDetailModel(lnCtr).getOwnrNm());     
+//                System.out.println("cClientTp  :  " + model.getMasterModel().getDetailModel(lnCtr).getClientTp());   
+//                System.out.println("sAddressx  :  " + model.getMasterModel().getDetailModel(lnCtr).getAddress());    
+//                System.out.println("sBankName  :  " + model.getMasterModel().getDetailModel(lnCtr).getBankName());   
+//                System.out.println("sBankAddr  :  " + model.getMasterModel().getDetailModel(lnCtr).getBankAddr());   
+//                System.out.println("sInsNamex  :  " + model.getMasterModel().getDetailModel(lnCtr).getInsName());    
+//                System.out.println("sInsAddrx  :  " + model.getMasterModel().getDetailModel(lnCtr).getInsAddr());    
+//            }
+//            System.out.println((String) json.get("message"));
+//            result = true;
+//        }
+//        assertTrue(result);
+//        //assertFalse(result)
+//    
 //    }
     
 }
