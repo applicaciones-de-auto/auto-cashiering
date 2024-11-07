@@ -221,7 +221,8 @@ public class SalesInvoice_Master implements GTransaction {
                 } 
 
                 CancelForm cancelform = new CancelForm();
-                if (!cancelform.loadCancelWindow(poGRider, poModel.getReferNo(), poModel.getTransNo(), "VSI")) {
+//                if (!cancelform.loadCancelWindow(poGRider, poModel.getReferNo(), poModel.getTransNo(), "VSI")) { 
+                if (!cancelform.loadCancelWindow(poGRider, poModel.getTransNo(), poModel.getTable())) { 
                     poJSON.put("result", "error");
                     poJSON.put("message", "Cancellation failed.");
                     return poJSON;
