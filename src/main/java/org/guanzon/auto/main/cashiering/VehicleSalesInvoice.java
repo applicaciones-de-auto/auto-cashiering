@@ -248,7 +248,10 @@ public class VehicleSalesInvoice implements GTransaction{
             } 
            
             poVSISource.getDetailModel().setCustType((String) loJSON.get("cCustType"));
-            poVSISource.getDetailModel().setReferNo((String) loJSON.get("sTransNox"));
+            poVSISource.getDetailModel().setReferNo(poController.getMasterModel().getTransNo()); //(String) loJSON.get("sTransNox")
+            poVSISource.getDetailModel().setTranType("UNIT SALES");
+            poVSISource.getDetailModel().setSourceCD("VSI");
+            poVSISource.getDetailModel().setSourceNo((String) loJSON.get("sTransNox"));
             poVSISource.getDetailModel().setUDRNo((String) loJSON.get("sReferNox"));
             poVSISource.getDetailModel().setCSNo((String) loJSON.get("sCSNoxxxx"));
             poVSISource.getDetailModel().setPlateNo((String) loJSON.get("sPlateNox"));
@@ -259,7 +262,6 @@ public class VehicleSalesInvoice implements GTransaction{
             poVSISource.getDetailModel().setVhclDesc((String) loJSON.get("sVhclDesc"));
             poVSISource.getDetailModel().setSEName((String) loJSON.get("sSENamexx"));
             poVSISource.getDetailModel().setCoCltNm((String) loJSON.get("sCoCltNmx"));
-            poVSISource.getDetailModel().setTranType("VSI");
             
             poVSISource.getDetailModel().setUnitPrce(new BigDecimal((String) loJSON.get("nUnitPrce")));
             poVSISource.getDetailModel().setPromoDsc(new BigDecimal((String) loJSON.get("nPromoDsc")));
@@ -272,6 +274,7 @@ public class VehicleSalesInvoice implements GTransaction{
                                    .add(poVSISource.getDetailModel().getSPFltDsc()).add(poVSISource.getDetailModel().getBndleDsc()).add(poVSISource.getDetailModel().getAddlDsc());
             poVSISource.getDetailModel().setDiscount(ldblDiscount);
             poVSISource.getDetailModel().setTranAmt(poVSISource.getDetailModel().getUnitPrce().add(ldblDiscount));
+            poVSISource.getDetailModel().setNetAmt(poVSISource.getDetailModel().getUnitPrce().subtract(ldblDiscount));
             
             //VSI Master                         
 //            poController.getMasterModel().setTranTotl(poVSISource.getDetailModel().getUnitPrce().subtract(ldblDiscount));    
@@ -305,8 +308,10 @@ public class VehicleSalesInvoice implements GTransaction{
             //VSI Source
             poVSISource.getDetailModel().setDiscount(new BigDecimal("0.00")); 
             poVSISource.getDetailModel().setTranAmt(new BigDecimal("0.00")); 
-            //VSI Master                         
+            //VSI Master        
+            poVSISource.getDetailModel().setSourceNo("");
             poController.getMasterModel().setTranTotl(new BigDecimal("0.00")); 
+            poController.getMasterModel().setNetTotal(new BigDecimal("0.00")); 
             poController.getMasterModel().setDiscount(new BigDecimal("0.00")); 
             poController.getMasterModel().setVatAmt(new BigDecimal("0.00")); 
             

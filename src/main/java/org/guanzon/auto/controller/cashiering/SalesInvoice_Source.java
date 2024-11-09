@@ -102,7 +102,7 @@ public class SalesInvoice_Source implements GTranDet {
             if (MiscUtil.RecordCount(loRS) > 0) {
                 while(loRS.next()){
                         paDetail.add(new Model_VehicleSalesInvoice(poGRider));
-                        paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox"), loRS.getInt("nEntryNox"));
+//                        paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox"), loRS.getInt("nEntryNox"));
                         
                         pnEditMode = EditMode.UPDATE;
                         lnctr++;

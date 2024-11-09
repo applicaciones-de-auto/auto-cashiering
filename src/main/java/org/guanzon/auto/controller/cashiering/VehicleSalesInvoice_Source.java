@@ -51,6 +51,7 @@ public class VehicleSalesInvoice_Source {
         poJSON = new JSONObject();
         paDetail.add(new Model_VehicleSalesInvoice(poGRider));
         paDetail.get(0).newRecord();
+        paDetail.get(0).setTransNo(MiscUtil.getNextCode(paDetail.get(0).getTable(), "sTransNox", true, poGRider.getConnection(), poGRider.getBranchCode()));
 
         paDetail.get(0).setValue("sTransNox", fsTransNo);
         poJSON.put("result", "success");
@@ -64,7 +65,8 @@ public class VehicleSalesInvoice_Source {
         poJSON = new JSONObject();
         Model_VehicleSalesInvoice loEntity = new Model_VehicleSalesInvoice(poGRider);
         String lsSQL = loEntity.makeSelectSQL();
-        lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL(fsValue));
+//        lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL(fsValue));
+        lsSQL = MiscUtil.addCondition(lsSQL, " sReferNox = " + SQLUtil.toSQL(fsValue));
         System.out.println(lsSQL);
         ResultSet loRS = poGRider.executeQuery(lsSQL);
        try {
@@ -73,7 +75,7 @@ public class VehicleSalesInvoice_Source {
                 paDetail = new ArrayList<>();
                 while(loRS.next()){
                     paDetail.add(new Model_VehicleSalesInvoice(poGRider));
-                    paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox"), 1 ); //fixed 1 row
+                    paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox")); //fixed 1 row
 
                     pnEditMode = EditMode.UPDATE;
                     lnctr++;
@@ -131,7 +133,7 @@ public class VehicleSalesInvoice_Source {
 //                return obj;
 //            }
             
-            paDetail.get(0).setTransNo(fsTransNo);
+            paDetail.get(0).setReferNo(fsTransNo);
             paDetail.get(0).setEntryNo(1); //fixed 1 row for vehicle sales invoice
             paDetail.get(0).setTargetBranchCd(psTargetBranchCd);
             
