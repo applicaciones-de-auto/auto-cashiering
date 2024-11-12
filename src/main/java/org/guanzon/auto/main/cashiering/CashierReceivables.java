@@ -286,9 +286,9 @@ public class CashierReceivables implements GTransaction{
                 poController.getMasterModel().setSourceCD("VEHICLE SALES");
                 poController.getMasterModel().setReferNo(fsTransCode);
                 poController.getMasterModel().setClientID(loVSP.getMasterModel().getMasterModel().getClientID());
-                poController.getMasterModel().setGrossAmt(loVSP.getMasterModel().getMasterModel().getTranTotl());
+                poController.getMasterModel().setGrossAmt(loVSP.getMasterModel().getMasterModel().getTranTotl()); 
                 poController.getMasterModel().setDiscAmt(loVSP.getTotalDiscount());
-                poController.getMasterModel().setTotalAmt(loVSP.getMasterModel().getMasterModel().getNetTTotl());
+                poController.getMasterModel().setTotalAmt(loVSP.getMasterModel().getMasterModel().getNetTTotl()); 
             }
 
             //Mandatory delete the CAR detail
@@ -313,16 +313,22 @@ public class CashierReceivables implements GTransaction{
                     }
                 }
             }
-
+            
+            
+            BigDecimal ldblTransTotl = loVSP.getMasterModel().getMasterModel().getTranTotl().subtract(loVSP.getMasterModel().getMasterModel().getTPLAmt()).subtract(loVSP.getMasterModel().getMasterModel().getCompAmt())
+                                        .subtract(loVSP.getMasterModel().getMasterModel().getLTOAmt()).subtract(loVSP.getMasterModel().getMasterModel().getChmoAmt()).subtract(loVSP.getMasterModel().getMasterModel().getLaborAmt())
+                                        .subtract(loVSP.getMasterModel().getMasterModel().getAccesAmt()).subtract(loVSP.getMasterModel().getMasterModel().getFrgtChrg()).subtract(loVSP.getMasterModel().getMasterModel().getOthrChrg())
+                                        .subtract(loVSP.getMasterModel().getMasterModel().getAdvDwPmt());
+            
             BigDecimal ldblDiscount = loVSP.getMasterModel().getMasterModel().getPromoDsc().add(loVSP.getMasterModel().getMasterModel().getBndleDsc())
                                     .add(loVSP.getMasterModel().getMasterModel().getFleetDsc()).add(loVSP.getMasterModel().getMasterModel().getSPFltDsc())
                                     .add(loVSP.getMasterModel().getMasterModel().getAddlDsc());//TODO Add insurance discount
 
             //IDENTIFIED new and used vehicle sales 
             poDetail.addDetail(poController.getMasterModel().getTransNo());
-            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getTranTotl());
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(ldblTransTotl); //loVSP.getMasterModel().getMasterModel().getTranTotl()
             poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(ldblDiscount);
-            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getTranTotl().subtract(ldblDiscount));
+            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(ldblTransTotl.subtract(ldblDiscount));
             if(loVSP.getMasterModel().getMasterModel().getIsVhclNw().equals("0")){ 
                 //BRAND NEW : UNIT -NEW VEHICLE SALES
                 poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("UNIT -NEW VEHICLE SALES"); //Account title
@@ -374,59 +380,70 @@ public class CashierReceivables implements GTransaction{
             }
 
             /*VSP LABOR DETAILS*/
-            String lsLabor = "";
-            String lsOtherLabor = "";
-            BigDecimal ldblOtherLaborAmt = new BigDecimal("0.00");
-            BigDecimal ldblOtherLaborDsc = new BigDecimal("0.00");
-            BigDecimal ldblOtherLaborTtl = new BigDecimal("0.00");
-            for(int lnCtr = 0;lnCtr <= loVSP.getVSPLaborList().size()-1;lnCtr++){
-                switch(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc().replace(" ", "").toUpperCase()){
-                    case "PERMASHINE":
-                        //LABOR : PERMASHINE if charge
-                    case "RUSTPROOF":
-                        //LABOR : RUSTPROOF if charge
-                    case "UNDERCOAT":
-                        //LABOR : UNDERCOAT if charge
-                    case "TINT":
-                        //LABOR : TINT if charge
-                        lsLabor = loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc();
-                    break;
-                    default:
-                        lsLabor = "";
-                        lsOtherLabor = "LABOR";
-                        ldblOtherLaborAmt = ldblOtherLaborAmt.add(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborAmt());
-                        ldblOtherLaborDsc = ldblOtherLaborDsc.add(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDscount());
-                        ldblOtherLaborTtl = ldblOtherLaborTtl.add(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getNtLabAmt());
-                    break;
-                }
-                if(!lsLabor.isEmpty()){
-                    poDetail.addDetail(poController.getMasterModel().getTransNo());
-                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsLabor);
-//                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc());//"LABOR" +  //Account title UNIT -LABOR
-    //                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("PERMASHINE");//Particulars}
-                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborAmt());
-                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDscount());
-                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getNtLabAmt());
-                }
-            } 
+//            String lsLabor = "";
+//            String lsOtherLabor = "";
+//            BigDecimal ldblOtherLaborAmt = new BigDecimal("0.00");
+//            BigDecimal ldblOtherLaborDsc = new BigDecimal("0.00");
+//            BigDecimal ldblOtherLaborTtl = new BigDecimal("0.00");
+//            for(int lnCtr = 0;lnCtr <= loVSP.getVSPLaborList().size()-1;lnCtr++){
+//                switch(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc().replace(" ", "").toUpperCase()){
+//                    case "PERMASHINE":
+//                        //LABOR : PERMASHINE if charge
+//                    case "RUSTPROOF":
+//                        //LABOR : RUSTPROOF if charge
+//                    case "UNDERCOAT":
+//                        //LABOR : UNDERCOAT if charge
+//                    case "TINT":
+//                        //LABOR : TINT if charge
+//                        lsLabor = loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc();
+//                    break;
+//                    default:
+//                        lsLabor = "";
+//                        lsOtherLabor = "LABOR";
+//                        ldblOtherLaborAmt = ldblOtherLaborAmt.add(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborAmt());
+//                        ldblOtherLaborDsc = ldblOtherLaborDsc.add(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDscount());
+//                        ldblOtherLaborTtl = ldblOtherLaborTtl.add(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getNtLabAmt());
+//                    break;
+//                }
+//                if(!lsLabor.isEmpty()){
+//                    poDetail.addDetail(poController.getMasterModel().getTransNo());
+//                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(lsLabor);
+////                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDsc());//"LABOR" +  //Account title UNIT -LABOR
+//    //                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("PERMASHINE");//Particulars}
+//                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborAmt());
+//                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getLaborDscount());
+//                    poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getVSPLaborModel().getDetailModel(lnCtr).getNtLabAmt());
+//                }
+//            } 
 
-            if(!lsOtherLabor.isEmpty()){
-                poDetail.addDetail(poController.getMasterModel().getTransNo());
-                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("UNIT -LABOR"); //Account title UNIT -LABOR
+//            if(!lsOtherLabor.isEmpty()){
+//                poDetail.addDetail(poController.getMasterModel().getTransNo());
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("UNIT -LABOR"); //Account title UNIT -LABOR
 //                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LABOR"); //Account title UNIT -LABOR
 //                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LABOR");//Particulars}
-                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(ldblOtherLaborAmt);
-                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(ldblOtherLaborDsc);
-                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(ldblOtherLaborTtl);
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(ldblOtherLaborAmt);
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(ldblOtherLaborDsc);
+//                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(ldblOtherLaborTtl);
+//            }
+            
+            /*VSP LABOR DETAILS*/
+            if(loVSP.getMasterModel().getMasterModel().getLaborAmt().compareTo(new BigDecimal("0.00")) > 0 ){
+                poDetail.addDetail(poController.getMasterModel().getTransNo());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("UNIT -LABOR"); //Account title UNIT -LABOR
+    //                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LABOR"); //Account title UNIT -LABOR
+    //                            poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTranType("LABOR");//Particulars}
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setGrossAmt(loVSP.getMasterModel().getMasterModel().getLaborAmt());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setDiscAmt(loVSP.getMasterModel().getMasterModel().getToLabDsc());
+                poDetail.getDetailModel(poDetail.getDetailList().size()-1).setTotalAmt(loVSP.getMasterModel().getMasterModel().getLaborAmt().subtract(loVSP.getMasterModel().getMasterModel().getToLabDsc()));
             }
-
+            
             /*VSP PARTS DETAILS*/
-            String lsPartDescConcat = "";
-            for(int lnCtr = 0;lnCtr <= loVSP.getVSPPartsList().size()-1;lnCtr++){
-//                            if(loVSP.getVSPPartsModel().getDetailModel(lnCtr).getChrgeTyp().equals("2")){
-                    lsPartDescConcat = lsPartDescConcat + ", " + loVSP.getVSPPartsModel().getDetailModel(lnCtr).getPartDesc();
-//                            }
-            }
+//            String lsPartDescConcat = "";
+//            for(int lnCtr = 0;lnCtr <= loVSP.getVSPPartsList().size()-1;lnCtr++){
+////                            if(loVSP.getVSPPartsModel().getDetailModel(lnCtr).getChrgeTyp().equals("2")){
+//                    lsPartDescConcat = lsPartDescConcat + ", " + loVSP.getVSPPartsModel().getDetailModel(lnCtr).getPartDesc();
+////                            }
+//            }
 
             if(loVSP.getMasterModel().getMasterModel().getAccesAmt().compareTo(new BigDecimal("0.00")) > 0 ){
                 poDetail.addDetail(poController.getMasterModel().getTransNo());
