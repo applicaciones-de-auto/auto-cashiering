@@ -104,6 +104,13 @@ public class CashierReceivables implements GTransaction{
         } else {
             pnEditMode = EditMode.UNKNOWN;
         }
+        
+        poJSON = poDetail.openDetail(fsValue);
+        if(!"success".equals((String) checkData(poJSON).get("result"))){
+            pnEditMode = EditMode.UNKNOWN;
+            return poJSON;
+        }
+        
         return poJSON;
     }
 
@@ -216,10 +223,13 @@ public class CashierReceivables implements GTransaction{
         return poDetail;
     }
     
+    public ArrayList getDetailList(){return poDetail.getDetailList();}
+    
     @Override
     public void setTransactionStatus(String string) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+    
     
     public JSONObject loadTransaction(String fsFrom, String fsTo){
         return poController.loadTransaction(fsFrom, fsTo);

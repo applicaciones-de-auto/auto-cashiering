@@ -175,6 +175,23 @@ public class CashierReceivablesTest {
 //            System.out.println("sInsNamex  :  " + model.getMasterModel().getMasterModel().getInsName());         
 //            System.out.println("sInsAddrx  :  " + model.getMasterModel().getMasterModel().getInsAddr());   
 //            
+//            
+//            System.out.println("--------------------------------------------------------------------");
+//            System.out.println("CASHIER RECEIVABLES DETAIL");
+//            System.out.println("--------------------------------------------------------------------");
+//            
+//            for(int lnCtr = 0; lnCtr <= model.getDetailList().size()-1;lnCtr++){     
+//                System.out.println("sTransNox  :  " + model.getDetailModel().getDetailModel(lnCtr).getTransNo());     
+//                System.out.println("nEntryNox  :  " + model.getDetailModel().getDetailModel(lnCtr).getEntryNo());        
+//                System.out.println("sTranType  :  " + model.getDetailModel().getDetailModel(lnCtr).getTranType());       
+//                System.out.println("nGrossAmt  :  " + model.getDetailModel().getDetailModel(lnCtr).getGrossAmt());       
+//                System.out.println("nDiscAmtx  :  " + model.getDetailModel().getDetailModel(lnCtr).getDiscAmt());         
+//                System.out.println("nDeductnx  :  " + model.getDetailModel().getDetailModel(lnCtr).getDeductn());      
+//                System.out.println("nTotalAmt  :  " + model.getDetailModel().getDetailModel(lnCtr).getTotalAmt());         
+//                System.out.println("nAmtPaidx  :  " + model.getDetailModel().getDetailModel(lnCtr).getAmtPaid());
+//                System.out.println("--------------------------------------------------------------------");
+//            }
+//            
 //            result = true;
 //        }
 //        assertTrue(result);
