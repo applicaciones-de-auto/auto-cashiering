@@ -150,6 +150,66 @@ public class SalesInvoiceTest {
 //                    System.exit(1);
 //                }
 //            }
+//            
+//            model.addSIPayment();
+//            for(int lnCtr = 0; lnCtr <= model.getSIPaymentList().size()-1; lnCtr++){
+//                json = model.getSIPaymentModel().getDetailModel(lnCtr).setPayMode("CHECK");
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getSIPaymentModel().getDetailModel(lnCtr).setPayTrnCD("M001CAR24020"); //check code
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getSIPaymentModel().getDetailModel(lnCtr).setPayAmt(new BigDecimal("5000.00")); // amount of advances to be deduct
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//            }
+//            
+//            model.addSIAdvances();
+//            for(int lnCtr = 0; lnCtr <= model.getSIDetailList().size()-1; lnCtr++){
+//                json = model.getSIAdvancesModel().getDetailModel(lnCtr).setReferNo("M001CAR24020"); //where the advances has been linked
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getSIAdvancesModel().getDetailModel(lnCtr).setSourceNo("M001CAR24020"); //the si transno of selected advances/previous payment
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getSIAdvancesModel().getDetailModel(lnCtr).setSourceCD("POL"); // the source code on where the advances to be linked
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getSIAdvancesModel().getDetailModel(lnCtr).setAdvAmt(new BigDecimal("5000.00")); // amount of advances to be deduct
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getSIAdvancesModel().getDetailModel(lnCtr).setEntryNo(1); // the row number where the row on si advances has been linked
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//                
+//                json = model.getSIAdvancesModel().getDetailModel(lnCtr).setTranType("ADVANCES"); // transtype of selected advances/transaction
+//                if ("error".equals((String) json.get("result"))){
+//                    System.err.println((String) json.get("message"));
+//                    System.exit(1);
+//                }
+//            }
 //        } else {
 //            System.err.println("result = " + (String) json.get("result"));
 //            fail((String) json.get("message"));

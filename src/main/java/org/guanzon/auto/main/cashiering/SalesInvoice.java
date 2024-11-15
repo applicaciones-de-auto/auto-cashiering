@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GTransaction;
+import org.guanzon.auto.controller.cashiering.SalesInvoice_Advances_Source;
 import org.guanzon.auto.controller.cashiering.SalesInvoice_Master;
+import org.guanzon.auto.controller.cashiering.SalesInvoice_Payment;
 import org.guanzon.auto.controller.cashiering.SalesInvoice_Source;
 import org.json.simple.JSONObject;
 
@@ -27,12 +29,16 @@ public class SalesInvoice implements GTransaction{
     public JSONObject poJSON;  
     
     SalesInvoice_Master poController;
-    SalesInvoice_Source poDetail;
     ArrayList<SalesInvoice_Master> paDetail;
+    SalesInvoice_Source poDetail;
+    SalesInvoice_Payment poPayment;
+    SalesInvoice_Advances_Source poAdvances;
     
     public SalesInvoice(GRider foAppDrver, boolean fbWtParent, String fsBranchCd){
         poController = new SalesInvoice_Master(foAppDrver,fbWtParent,fsBranchCd);
         poDetail = new SalesInvoice_Source(foAppDrver);
+        poPayment = new SalesInvoice_Payment(foAppDrver);
+        poAdvances = new SalesInvoice_Advances_Source(foAppDrver);
         
         poGRider = foAppDrver;
         pbWtParent = fbWtParent;
@@ -103,6 +109,18 @@ public class SalesInvoice implements GTransaction{
             return poJSON;
         }
         
+        poJSON = poPayment.openDetail(fsValue);
+        if(!"success".equals((String) checkData(poJSON).get("result"))){
+            pnEditMode = EditMode.UNKNOWN;
+            return poJSON;
+        }
+        
+        poJSON = poAdvances.openDetail(fsValue);
+        if(!"success".equals((String) checkData(poJSON).get("result"))){
+            pnEditMode = EditMode.UNKNOWN;
+            return poJSON;
+        }
+        
         return poJSON;
     }
 
@@ -130,6 +148,18 @@ public class SalesInvoice implements GTransaction{
         }
         
         poJSON =  poDetail.saveDetail((String) poController.getMasterModel().getTransNo());
+        if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
+            if (!pbWtParent) poGRider.rollbackTrans();
+            return checkData(poJSON);
+        }
+        
+        poJSON =  poPayment.saveDetail((String) poController.getMasterModel().getTransNo());
+        if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
+            if (!pbWtParent) poGRider.rollbackTrans();
+            return checkData(poJSON);
+        }
+        
+        poJSON =  poAdvances.saveDetail((String) poController.getMasterModel().getTransNo());
         if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
             if (!pbWtParent) poGRider.rollbackTrans();
             return checkData(poJSON);
@@ -215,6 +245,16 @@ public class SalesInvoice implements GTransaction{
     public ArrayList getSIDetailList(){return poDetail.getDetailList();}
     public Object addSIDetail(){ return poDetail.addDetail(poController.getMasterModel().getTransNo());}
     public Object removeSIDetail(int fnRow){ return poDetail.removeDetail(fnRow);}
+    
+    public SalesInvoice_Payment getSIPaymentModel() {return poPayment;}
+    public ArrayList getSIPaymentList(){return poPayment.getDetailList();}
+    public Object addSIPayment(){ return poPayment.addDetail(poController.getMasterModel().getTransNo());}
+    public Object removeSIPayment(int fnRow){ return poPayment.removeDetail(fnRow);}
+    
+    public SalesInvoice_Advances_Source getSIAdvancesModel() {return poAdvances;}
+    public ArrayList getSIAdvancesList(){return poAdvances.getDetailList();}
+    public Object addSIAdvances(){ return poAdvances.addDetail(poController.getMasterModel().getTransNo());}
+    public Object removeSIAdvances(int fnRow){ return poAdvances.removeDetail(fnRow);}
     
     @Override
     public void setTransactionStatus(String string) {
