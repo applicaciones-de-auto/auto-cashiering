@@ -5,7 +5,9 @@
  */
 package org.guanzon.auto.controller.cashiering;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -303,7 +305,6 @@ public class SalesInvoice_Master implements GTransaction {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    
     public JSONObject searchVDR(String fsValue, boolean fbByCode, String fsClientType) {
         JSONObject loJSON = new JSONObject();  
         Model_VehicleDeliveryReceipt_Master loEntity = new Model_VehicleDeliveryReceipt_Master(poGRider);
@@ -350,6 +351,31 @@ public class SalesInvoice_Master implements GTransaction {
             return loJSON;
         }
         return loJSON;
+    }
+    
+    public BigDecimal checkPaidAmt(String fsTransNo){
+        BigDecimal ldblPaidAmt = new BigDecimal("0.00");
+        String lsSQL = " SELECT IFNULL(SUM(b.nTranAmtx),0.00) AS nTranAmtx " +
+                       " FROM si_master a " +
+                       " LEFT JOIN si_master_source b ON b.sReferNox = a.sTransNox ";
+        lsSQL = MiscUtil.addCondition(lsSQL, " b.sSourceNo = " + SQLUtil.toSQL(fsTransNo)
+                                                +" AND a.sTransNox <> " + SQLUtil.toSQL(poModel.getTransNo())
+                                                +" AND a.cTranStat <> " + SQLUtil.toSQL(TransactionStatus.STATE_CANCELLED)) ;
+        System.out.println("EXISTING VSI NO CHECK: " + lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+
+        if (MiscUtil.RecordCount(loRS) > 0){
+            try {
+                while(loRS.next()){
+                    ldblPaidAmt = new BigDecimal(loRS.getString("nTranAmtx"));
+                }
+
+                MiscUtil.close(loRS);
+            } catch (SQLException ex) {
+                Logger.getLogger(SalesInvoice_Master.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return ldblPaidAmt;
     }
     
 }
