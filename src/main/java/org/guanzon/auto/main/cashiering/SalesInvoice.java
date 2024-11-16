@@ -322,25 +322,29 @@ public class SalesInvoice implements GTransaction{
             ldblDiscount = ldblDiscount.add(poDetail.getDetailModel(lnCtr).getDiscount());
             ldblNetTotl = ldblNetTotl.add(poDetail.getDetailModel(lnCtr).getNetAmt());
             
-            //Check when exist in CAR
-            loJSON = poCAR.openTransaction(poDetail.getDetailModel(lnCtr).getSourceNo());
-            if(!"error".equals((String) loJSON.get("result"))){
-                if(psCARTransCde == null){
-                    psCARTransCde = new ArrayList();
-                }
-                if(!psCARTransCde.contains(poDetail.getDetailModel(lnCtr).getSourceNo())){
-                    psCARTransCde.add(poDetail.getDetailModel(lnCtr).getSourceNo());
-                }
-            }
-            
-            //Check when exist in SOA
-            loJSON = poSOA.openTransaction(poDetail.getDetailModel(lnCtr).getSourceNo());
-            if(!"error".equals((String) loJSON.get("result"))){
-                if(psSOATransCde == null){
-                    psSOATransCde = new ArrayList();
-                }
-                if(!psSOATransCde.contains(poDetail.getDetailModel(lnCtr).getSourceNo())){
-                    psSOATransCde.add(poDetail.getDetailModel(lnCtr).getSourceNo());
+            if(poDetail.getDetailModel(lnCtr).getSourceNo() != null){
+                if(!poDetail.getDetailModel(lnCtr).getSourceNo().trim().isEmpty()){
+                    //Check when exist in CAR
+                    loJSON = poCAR.openTransaction(poDetail.getDetailModel(lnCtr).getSourceNo());
+                    if(!"error".equals((String) loJSON.get("result"))){
+                        if(psCARTransCde == null){
+                            psCARTransCde = new ArrayList();
+                        }
+                        if(!psCARTransCde.contains(poDetail.getDetailModel(lnCtr).getSourceNo())){
+                            psCARTransCde.add(poDetail.getDetailModel(lnCtr).getSourceNo());
+                        }
+                    }
+
+                    //Check when exist in SOA
+                    loJSON = poSOA.openTransaction(poDetail.getDetailModel(lnCtr).getSourceNo());
+                    if(!"error".equals((String) loJSON.get("result"))){
+                        if(psSOATransCde == null){
+                            psSOATransCde = new ArrayList();
+                        }
+                        if(!psSOATransCde.contains(poDetail.getDetailModel(lnCtr).getSourceNo())){
+                            psSOATransCde.add(poDetail.getDetailModel(lnCtr).getSourceNo());
+                        }
+                    }
                 }
             }
         }
