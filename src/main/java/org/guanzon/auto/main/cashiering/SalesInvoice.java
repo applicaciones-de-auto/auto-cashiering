@@ -5,6 +5,7 @@
  */
 package org.guanzon.auto.main.cashiering;
 
+import com.mysql.fabric.xmlrpc.Client;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -22,6 +23,10 @@ import org.guanzon.auto.controller.cashiering.SalesInvoice_Master;
 import org.guanzon.auto.controller.cashiering.SalesInvoice_Payment;
 import org.guanzon.auto.controller.cashiering.SalesInvoice_Source;
 import org.guanzon.auto.controller.cashiering.StatementOfAccount_Master;
+import org.guanzon.auto.controller.clients.Client_Master;
+import org.guanzon.auto.controller.clients.Sales_Executive_Master;
+import org.guanzon.auto.controller.parameter.Bank_Branches;
+import org.guanzon.auto.controller.parameter.Insurance_Branches;
 import org.json.simple.JSONObject;
 
 /**
@@ -154,6 +159,17 @@ public class SalesInvoice implements GTransaction{
     @Override
     public JSONObject saveTransaction() {
         poJSON = new JSONObject();  
+        //Validate CAR BALANCE
+        poJSON = computeCARBalance(true);
+        if("error".equals((String) poJSON.get("result"))){
+            return poJSON;
+        }
+        
+        //Validate SOA BALANCE
+        poJSON = computeSOABalance(true);
+        if("error".equals((String) poJSON.get("result"))){
+            return poJSON;
+        }
         
         if (!pbWtParent) poGRider.beginTrans();
         
@@ -181,8 +197,6 @@ public class SalesInvoice implements GTransaction{
             return checkData(poJSON);
         }
         
-        if (!pbWtParent) poGRider.commitTrans();
-        
         //UPDATE CAR BALANCE
         poJSON = computeCARBalance(false);
         if("error".equals((String) poJSON.get("result"))){
@@ -194,6 +208,8 @@ public class SalesInvoice implements GTransaction{
         if("error".equals((String) poJSON.get("result"))){
             return poJSON;
         }
+        
+        if (!pbWtParent) poGRider.commitTrans();
         
         return poJSON;
     }
@@ -296,8 +312,12 @@ public class SalesInvoice implements GTransaction{
 //    public ArrayList getMasterList(){return poController.getDetailList();}
     
     public JSONObject computeSIAmount(){
-        psCARTransCde = null;
-        psSOATransCde = null;
+        if(psCARTransCde == null){
+            psCARTransCde = new ArrayList();
+        }
+        if(psSOATransCde == null){
+            psSOATransCde = new ArrayList();
+        }
         JSONObject loJSON = new JSONObject();
         int lnCtr = 0;
         BigDecimal ldblNetAmt = new BigDecimal("0.00");
@@ -327,9 +347,6 @@ public class SalesInvoice implements GTransaction{
                     //Check when exist in CAR
                     loJSON = poCAR.openTransaction(poDetail.getDetailModel(lnCtr).getSourceNo());
                     if(!"error".equals((String) loJSON.get("result"))){
-                        if(psCARTransCde == null){
-                            psCARTransCde = new ArrayList();
-                        }
                         if(!psCARTransCde.contains(poDetail.getDetailModel(lnCtr).getSourceNo())){
                             psCARTransCde.add(poDetail.getDetailModel(lnCtr).getSourceNo());
                         }
@@ -338,9 +355,6 @@ public class SalesInvoice implements GTransaction{
                     //Check when exist in SOA
                     loJSON = poSOA.openTransaction(poDetail.getDetailModel(lnCtr).getSourceNo());
                     if(!"error".equals((String) loJSON.get("result"))){
-                        if(psSOATransCde == null){
-                            psSOATransCde = new ArrayList();
-                        }
                         if(!psSOATransCde.contains(poDetail.getDetailModel(lnCtr).getSourceNo())){
                             psSOATransCde.add(poDetail.getDetailModel(lnCtr).getSourceNo());
                         }
@@ -360,7 +374,7 @@ public class SalesInvoice implements GTransaction{
         }
         
         poController.getMasterModel().setTranTotl(ldblTranTotl);
-        poController.getMasterModel().setTranTotl(ldblAdvPaym);
+        poController.getMasterModel().setAdvPaym(ldblAdvPaym);
         poController.getMasterModel().setDiscount(ldblDiscount);
         poController.getMasterModel().setNetTotal(ldblNetTotl);
         
@@ -371,7 +385,7 @@ public class SalesInvoice implements GTransaction{
         JSONObject loJSON = new JSONObject();
         BigDecimal ldblPaidAmt = new BigDecimal("0.00");
         
-        for(int lnCtr = 0; lnCtr <= psCARTransCde.size(); lnCtr++){
+        for(int lnCtr = 0; lnCtr <= psCARTransCde.size()-1; lnCtr++){
             ldblPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
             ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt);
             
@@ -408,7 +422,7 @@ public class SalesInvoice implements GTransaction{
         JSONObject loJSON = new JSONObject();
         BigDecimal ldblPaidAmt = new BigDecimal("0.00");
         
-        for(int lnCtr = 0; lnCtr <= psSOATransCde.size(); lnCtr++){
+        for(int lnCtr = 0; lnCtr <= psSOATransCde.size()-1; lnCtr++){
             ldblPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
             ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt);
             
@@ -438,6 +452,142 @@ public class SalesInvoice implements GTransaction{
             }
         }
         
+        return loJSON;
+    }
+    
+    public JSONObject searchCustomer(String fsValue) {
+        JSONObject loJSON = new JSONObject();
+        Client_Master loEntity = new Client_Master(poGRider, pbWtParent, psBranchCd);
+        loJSON = loEntity.searchClient(fsValue, false);
+        if(!"error".equals((String) loJSON.get("result"))){
+            poController.getMasterModel().setClientID((String) loJSON.get("sClientID"));
+            poController.getMasterModel().setBuyCltNm((String) loJSON.get("sCompnyNm"));
+            poController.getMasterModel().setAddress((String) loJSON.get("xAddressx"));
+        } else {
+            poController.getMasterModel().setClientID("");
+            poController.getMasterModel().setAddress("");
+        }
+        
+        return loJSON;
+    }
+    
+    public JSONObject searchBank(String fsValue) {
+        JSONObject loJSON = new JSONObject();
+        Bank_Branches loEntity = new Bank_Branches(poGRider, pbWtParent, psBranchCd);
+        loJSON = loEntity.searchRecord(fsValue, true);
+        if(!"error".equals((String) loJSON.get("result"))){
+            poController.getMasterModel().setClientID((String) loJSON.get("sBrBankID"));
+            poController.getMasterModel().setBuyCltNm((String) loJSON.get("sBankName") + " / " + (String) loJSON.get("sBrBankNm"));
+            poController.getMasterModel().setAddress((String) loJSON.get("xAddressx"));
+        } else {
+            poController.getMasterModel().setClientID("");
+            poController.getMasterModel().setBuyCltNm("");
+            poController.getMasterModel().setAddress("");
+        }
+        
+        return loJSON;
+    }
+    
+    public JSONObject searchInsurance(String fsValue) {
+        JSONObject loJSON = new JSONObject();
+        Insurance_Branches loEntity = new Insurance_Branches(poGRider, pbWtParent, psBranchCd);
+        loJSON = loEntity.searchRecord(fsValue, true);
+        if(!"error".equals((String) loJSON.get("result"))){
+            poController.getMasterModel().setClientID((String) loJSON.get("sBrInsIDx"));
+            poController.getMasterModel().setBuyCltNm((String) loJSON.get("sInsurNme") + " / " + (String) loJSON.get("sBrInsNme"));
+            poController.getMasterModel().setAddress((String) loJSON.get("xAddressx"));
+        } else {
+            poController.getMasterModel().setClientID("");
+            poController.getMasterModel().setBuyCltNm("");
+            poController.getMasterModel().setAddress("");
+        }
+        return loJSON;
+    }
+    
+    public JSONObject searchEmployee(String fsValue, boolean fbByCode) {
+        JSONObject loJSON = new JSONObject();
+        Sales_Executive_Master loEntity = new Sales_Executive_Master(poGRider, pbWtParent, psBranchCd);
+        loJSON = loEntity.searchEmployee(fsValue,fbByCode);
+        if(!"error".equals((String) loJSON.get("result"))){
+            poController.getMasterModel().setClientID((String) loJSON.get("sClientID"));
+            poController.getMasterModel().setBuyCltNm((String) loJSON.get("sCompnyNm"));
+            poController.getMasterModel().setAddress((String) loJSON.get("sAddressx"));
+        } else {
+            poController.getMasterModel().setClientID("");
+            poController.getMasterModel().setBuyCltNm("");
+            poController.getMasterModel().setAddress("");
+        }
+        return loJSON;
+    }
+    
+    public JSONObject searchSupplier(String fsValue) {
+        JSONObject loJSON = new JSONObject();
+        Insurance_Branches loEntity = new Insurance_Branches(poGRider, pbWtParent, psBranchCd);
+        loJSON = loEntity.searchRecord(fsValue, true);
+        if(!"error".equals((String) loJSON.get("result"))){
+            poController.getMasterModel().setClientID((String) loJSON.get("sBrInsIDx"));
+            poController.getMasterModel().setBuyCltNm((String) loJSON.get("sInsurNme") + " / " + (String) loJSON.get("sBrInsNme"));
+            poController.getMasterModel().setAddress((String) loJSON.get("xAddressx"));
+        } else {
+            poController.getMasterModel().setClientID("");
+            poController.getMasterModel().setBuyCltNm("");
+            poController.getMasterModel().setAddress("");
+        }
+        return loJSON;
+    }
+    
+    public JSONObject searchCAR(String fsValue) {
+        JSONObject loJSON = new JSONObject();
+        CashierReceivables loEntity = new CashierReceivables(poGRider, pbWtParent, psBranchCd);
+        loJSON = loEntity.searchTransaction(fsValue, false);
+        if(!"error".equals((String) loJSON.get("result"))){
+            if(poController.getMasterModel().getClientID() == null){
+                poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
+                poController.getMasterModel().setBuyCltNm(loEntity.getMasterModel().getMasterModel().getPayerNme());
+                poController.getMasterModel().setAddress(loEntity.getMasterModel().getMasterModel().getPayerAdd());
+            } else {
+                if(poController.getMasterModel().getClientID().trim().isEmpty()){
+                    poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
+                    poController.getMasterModel().setBuyCltNm(loEntity.getMasterModel().getMasterModel().getPayerNme());
+                    poController.getMasterModel().setAddress(loEntity.getMasterModel().getMasterModel().getPayerAdd());
+                }
+            }
+            
+            for(int lnCtr = 0; lnCtr <= loEntity.getDetailList().size()-1;lnCtr++){
+                addSIDetail();
+                poDetail.getDetailModel(getSIDetailList().size()-1).setSourceNo(loEntity.getMasterModel().getMasterModel().getTransNo());
+                poDetail.getDetailModel(getSIDetailList().size()-1).setSourceCD(loEntity.getMasterModel().getMasterModel().getSourceCD());
+                poDetail.getDetailModel(getSIDetailList().size()-1).setTranType(loEntity.getDetailModel().getDetailModel(lnCtr).getTranType());
+                poDetail.getDetailModel(getSIDetailList().size()-1).setTranAmt(loEntity.getDetailModel().getDetailModel(lnCtr).getTotalAmt());
+            }
+        } 
+        return loJSON;
+    }
+    
+    public JSONObject searchSOA(String fsValue) {
+        JSONObject loJSON = new JSONObject();
+        StatementOfAccount loEntity = new StatementOfAccount(poGRider, pbWtParent, psBranchCd);
+        loJSON = loEntity.searchTransaction(fsValue, false);
+        if(!"error".equals((String) loJSON.get("result"))){
+            if(poController.getMasterModel().getClientID() == null){
+                poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
+                poController.getMasterModel().setBuyCltNm(loEntity.getMasterModel().getMasterModel().getPayerNme());
+//                poController.getMasterModel().setAddress(loEntity.getMasterModel().getMasterModel().getPayerAdd());
+            } else {
+                if(poController.getMasterModel().getClientID().trim().isEmpty()){
+                    poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
+                    poController.getMasterModel().setBuyCltNm(loEntity.getMasterModel().getMasterModel().getPayerNme());
+//                    poController.getMasterModel().setAddress(loEntity.getMasterModel().getMasterModel().getPayerAdd());
+                }
+            }
+            for(int lnCtr = 0; lnCtr <= loEntity.getDetailList().size()-1;lnCtr++){
+                addSIDetail();
+                poDetail.getDetailModel(getSIDetailList().size()-1).setSourceNo(loEntity.getMasterModel().getMasterModel().getTransNo());
+                poDetail.getDetailModel(getSIDetailList().size()-1).setSourceCD("AR");
+                poDetail.getDetailModel(getSIDetailList().size()-1).setTranType(loEntity.getDetailModel().getDetailModel(lnCtr).getTranType());
+                poDetail.getDetailModel(getSIDetailList().size()-1).setTranAmt(loEntity.getDetailModel().getDetailModel(lnCtr).getAmount());
+            }
+        }
         return loJSON;
     }
 }

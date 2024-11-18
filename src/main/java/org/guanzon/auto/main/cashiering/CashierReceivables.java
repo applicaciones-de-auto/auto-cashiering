@@ -746,7 +746,7 @@ public class CashierReceivables implements GTransaction{
             //Re-compute amount
             loEntity.computeAmount();
 
-            loJSON = poController.checkExistingCAR("c","INSURANCE SALES", fsTransCode);
+            loJSON = poController.checkExistingCAR("i","INSURANCE SALES", fsTransCode);
             if(!"success".equals((String) loJSON.get("result"))){
                 loJSON = newTransaction();
             } else {
@@ -757,10 +757,10 @@ public class CashierReceivables implements GTransaction{
             /*1. CHARGED TO CUSTOMER Transactions */
             if(!"error".equals((String) loJSON.get("result"))){
                 poController.getMasterModel().setTransactDte(loEntity.getMasterModel().getMasterModel().getTransactDte());
-                poController.getMasterModel().setPayerCde("c");
+                poController.getMasterModel().setPayerCde("i");
                 poController.getMasterModel().setSourceCD("INSURANCE SALES");
                 poController.getMasterModel().setReferNo(fsTransCode);
-                poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
+                poController.getMasterModel().setBrInsCde(loEntity.getMasterModel().getMasterModel().getBrInsID());
                 poController.getMasterModel().setGrossAmt(loEntity.getMasterModel().getMasterModel().getTotalAmt());
 //                poController.getMasterModel().setDiscAmt(loEntity.getMasterModel().getMasterModel().getDiscount()); 
                 poController.getMasterModel().setTotalAmt(loEntity.getMasterModel().getMasterModel().getTotalAmt());

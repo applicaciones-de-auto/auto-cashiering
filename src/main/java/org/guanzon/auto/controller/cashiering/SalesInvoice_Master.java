@@ -16,6 +16,7 @@ import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
+import org.guanzon.appdriver.constant.RecordStatus;
 import org.guanzon.appdriver.constant.TransactionStatus;
 import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.general.CancelForm;
@@ -377,5 +378,4 @@ public class SalesInvoice_Master implements GTransaction {
         }
         return ldblPaidAmt;
     }
-    
 }
