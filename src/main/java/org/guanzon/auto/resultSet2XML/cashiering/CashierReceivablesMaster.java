@@ -108,11 +108,13 @@ public class CashierReceivablesMaster  {
                         + " LEFT JOIN addresses d ON d.sAddrssID = c.sAddrssID  "                            
                         + " LEFT JOIN barangay e ON e.sBrgyIDxx = d.sBrgyIDxx   "                            
                         + " LEFT JOIN towncity f ON f.sTownIDxx = d.sTownIDxx   "                            
-                        + " LEFT JOIN province g ON g.sProvIDxx = f.sProvIDxx       "                        
+                        + " LEFT JOIN province g ON g.sProvIDxx = f.sProvIDxx       "    
+                        /*BANK*/
                         + " LEFT JOIN banks_branches h ON h.sBrBankID = a.sBrBankCd "                        
                         + " LEFT JOIN towncity i ON i.sTownIDxx = h.sTownIDxx "                              
                         + " LEFT JOIN province j ON j.sProvIDxx = i.sProvIDxx "                              
-                        + " LEFT JOIN banks k ON k.sBankIDxx = h.sBankIDxx    "                              
+                        + " LEFT JOIN banks k ON k.sBankIDxx = h.sBankIDxx    "    
+                        /*INSURANCE*/
                         + " LEFT JOIN insurance_company_branches l ON l.sBrInsIDx = a.sBrInsCde "            
                         + " LEFT JOIN towncity m ON m.sTownIDxx = l.sTownIDxx "                              
                         + " LEFT JOIN province n ON n.sProvIDxx = m.sProvIDxx "                              

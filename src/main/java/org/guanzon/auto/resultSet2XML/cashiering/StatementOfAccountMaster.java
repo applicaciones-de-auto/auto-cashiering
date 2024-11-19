@@ -89,7 +89,7 @@ public class StatementOfAccountMaster {
                         + " LEFT JOIN insurance_company o ON o.sInsurIDx = l.sInsurIDx  " 
                         + " WHERE 0=1";
         
-        
+        System.out.println(lsSQL);
         ResultSet loRS = instance.executeQuery(lsSQL);
         try {
             if (MiscUtil.resultSet2XML(instance, loRS, System.getProperty("sys.default.path.metadata"), "soa_master", "")){

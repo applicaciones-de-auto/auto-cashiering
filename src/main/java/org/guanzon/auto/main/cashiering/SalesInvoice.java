@@ -18,6 +18,7 @@ import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.controller.cashiering.CashierReceivables_Master;
+import org.guanzon.auto.controller.cashiering.Credicard_Trans;
 import org.guanzon.auto.controller.cashiering.SalesInvoice_Advances_Source;
 import org.guanzon.auto.controller.cashiering.SalesInvoice_Master;
 import org.guanzon.auto.controller.cashiering.SalesInvoice_Payment;
@@ -49,6 +50,7 @@ public class SalesInvoice implements GTransaction{
     SalesInvoice_Advances_Source poAdvances;
     CashierReceivables_Master poCAR;
     StatementOfAccount_Master poSOA;
+    Credicard_Trans poCreditcard;
     
     List<String> psCARTransCde = new ArrayList<>();
     List<String> psSOATransCde = new ArrayList<>();
@@ -60,6 +62,7 @@ public class SalesInvoice implements GTransaction{
         poAdvances = new SalesInvoice_Advances_Source(foAppDrver);
         poCAR = new CashierReceivables_Master(foAppDrver,fbWtParent,fsBranchCd);
         poSOA = new StatementOfAccount_Master(foAppDrver,fbWtParent,fsBranchCd);
+        poCreditcard = new Credicard_Trans(foAppDrver,fbWtParent,fsBranchCd);
         
         poGRider = foAppDrver;
         pbWtParent = fbWtParent;
