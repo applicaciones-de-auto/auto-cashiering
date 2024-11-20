@@ -16,7 +16,7 @@ import org.guanzon.appdriver.constant.TransactionStatus;
  *
  * @author Arsiela
  */
-public class SalesInvoicePayment  {
+public class CreditcardTrans  {
     public static void main (String [] args){
         String path;
         if(System.getProperty("os.name").toLowerCase().contains("win")){
@@ -36,29 +36,29 @@ public class SalesInvoicePayment  {
 
         System.out.println("Connected");
         
-        System.setProperty("sys.default.path.metadata", "D:/GGC_Maven_Systems/config/metadata/Model_SalesInvoice_Payment.xml");
+        System.setProperty("sys.default.path.metadata", "D:/GGC_Maven_Systems/config/metadata/Model_Creditcard_Trans.xml");
         
         
-        String lsSQL =   " SELECT "                 
-                        + "    a.sTransNox "         
-                        + "  , a.sPayModex "         
-                        + "  , a.nPayAmtxx "         
-                        + "  , a.sPayTrnCD "          
-                        + "  , b.sBankIDxx "          
-                        + "  , b.sCardNoxx "          
-                        + "  , b.sApprovNo "          
-                        + "  , b.sTraceNox "          
-                        + "  , b.sRemarksx " 
-                        + "  , c.sBankName "
-                        + " FROM si_master_payment a "
-                        + " LEFT JOIN credit_card_trans b ON b.sTransNox = a.sPayTrnCD AND b.cTranStat <> " + SQLUtil.toSQL(TransactionStatus.STATE_CANCELLED)
-                        + " LEFT JOIN banks c ON c.sBankIDxx = b.sBankIDxx "
+        String lsSQL =    " SELECT "                  
+                        + "    a.sTransNox "          
+                        + "  , a.sBankIDxx "          
+                        + "  , a.sCardNoxx "          
+                        + "  , a.sApprovNo "          
+                        + "  , a.sTraceNox "          
+                        + "  , a.nAmountxx "          
+                        + "  , a.sRemarksx "          
+                        + "  , a.cTranStat "          
+                        + "  , a.sModified "          
+                        + "  , a.dModified "    
+                        + "  , b.sBankName "      
+                        + " FROM credit_card_trans a "
+                        + " LEFT JOIN banks b ON b.sBankIDxx = a.sBankIDxx "
                         + " WHERE 0=1";
         
         
         ResultSet loRS = instance.executeQuery(lsSQL);
         try {
-            if (MiscUtil.resultSet2XML(instance, loRS, System.getProperty("sys.default.path.metadata"), "si_master_payment", "")){
+            if (MiscUtil.resultSet2XML(instance, loRS, System.getProperty("sys.default.path.metadata"), "credit_card_trans", "")){
                 System.out.println("ResultSet exported.");
             }
         } catch (SQLException e) {

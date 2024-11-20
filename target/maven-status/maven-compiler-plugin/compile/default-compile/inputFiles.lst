@@ -1,4 +1,5 @@
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\main\cashiering\SalesInvoice.java
+D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\controller\cashiering\Credicard_Trans.java
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\resultSet2XML\cashiering\SalesInvoiceMaster.java
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\resultSet2XML\cashiering\CashierReceivablesDetail.java
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\main\cashiering\StatementOfAccount.java
@@ -17,6 +18,7 @@ D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\main\cashiering\VehicleSalesInvoice.java
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\controller\cashiering\SalesInvoice_Advances_Source.java
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\controller\cashiering\SalesInvoice_Source.java
+D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\resultSet2XML\cashiering\CreditcardTrans.java
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\resultSet2XML\cashiering\SalesInvoicePayment.java
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\resultSet2XML\cashiering\StatementOfAccountMaster.java
 D:\Guanzon\GMC SEG Folder - Maven\auto-cashiering\src\main\java\org\guanzon\auto\resultSet2XML\cashiering\SalesInvoiceSource.java

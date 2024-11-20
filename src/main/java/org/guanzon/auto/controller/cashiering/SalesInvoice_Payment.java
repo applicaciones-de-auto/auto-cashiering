@@ -71,14 +71,14 @@ public class SalesInvoice_Payment implements GTranDet {
 //            paDetail.get(0).setEntryNo(0);
             
             poJSON.put("result", "success");
-            poJSON.put("message", "SI Source add record.");
+            poJSON.put("message", "SI Payment add record.");
         } else {
             paDetail.add(new Model_SalesInvoice_Payment(poGRider));
             paDetail.get(paDetail.size()-1).newRecord();
             paDetail.get(paDetail.size()-1).setTransNo(fsTransNo);
 //            paDetail.get(paDetail.size()-1).setEntryNo(0);
             poJSON.put("result", "success");
-            poJSON.put("message", "SI Source add record.");
+            poJSON.put("message", "SI Payment add record.");
         }
         return poJSON;
     }

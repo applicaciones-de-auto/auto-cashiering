@@ -27,6 +27,7 @@ import org.guanzon.auto.controller.cashiering.StatementOfAccount_Master;
 import org.guanzon.auto.controller.clients.Client_Master;
 import org.guanzon.auto.controller.clients.Sales_Executive_Master;
 import org.guanzon.auto.controller.parameter.Bank_Branches;
+import org.guanzon.auto.controller.parameter.Bank_Master;
 import org.guanzon.auto.controller.parameter.Insurance_Branches;
 import org.json.simple.JSONObject;
 
@@ -52,6 +53,7 @@ public class SalesInvoice implements GTransaction{
     StatementOfAccount_Master poSOA;
     Credicard_Trans poCreditcard;
     
+    List<String> psOthPayTransCde = new ArrayList<>();
     List<String> psCARTransCde = new ArrayList<>();
     List<String> psSOATransCde = new ArrayList<>();
     
@@ -133,18 +135,17 @@ public class SalesInvoice implements GTransaction{
             return poJSON;
         }
         
-        poJSON = poPayment.openDetail(fsValue);
-        if(!"success".equals((String) checkData(poJSON).get("result"))){
-            pnEditMode = EditMode.UNKNOWN;
-            return poJSON;
-        }
-        
         poJSON = poAdvances.openDetail(fsValue);
         if(!"success".equals((String) checkData(poJSON).get("result"))){
             pnEditMode = EditMode.UNKNOWN;
             return poJSON;
         }
         
+        poJSON = poPayment.openDetail(fsValue);
+        if(!"success".equals((String) checkData(poJSON).get("result"))){
+            pnEditMode = EditMode.UNKNOWN;
+            return poJSON;
+        }
         return poJSON;
     }
 
@@ -174,6 +175,12 @@ public class SalesInvoice implements GTransaction{
             return poJSON;
         }
         
+        //SAVE OTHER PAYMENT : Credicard, Check, Online Payment, Gift Check
+        poJSON = saveOtherPayment();
+        if("error".equals((String) poJSON.get("result"))){
+            return poJSON;
+        }
+        
         if (!pbWtParent) poGRider.beginTrans();
         
         poJSON =  poController.saveTransaction();
@@ -188,13 +195,13 @@ public class SalesInvoice implements GTransaction{
             return checkData(poJSON);
         }
         
-        poJSON =  poPayment.saveDetail((String) poController.getMasterModel().getTransNo());
+        poJSON =  poAdvances.saveDetail((String) poController.getMasterModel().getTransNo());
         if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
             if (!pbWtParent) poGRider.rollbackTrans();
             return checkData(poJSON);
         }
         
-        poJSON =  poAdvances.saveDetail((String) poController.getMasterModel().getTransNo());
+        poJSON =  poPayment.saveDetail((String) poController.getMasterModel().getTransNo());
         if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
             if (!pbWtParent) poGRider.rollbackTrans();
             return checkData(poJSON);
@@ -215,6 +222,55 @@ public class SalesInvoice implements GTransaction{
         if (!pbWtParent) poGRider.commitTrans();
         
         return poJSON;
+    }
+    
+    private JSONObject saveOtherPayment(){
+        JSONObject loJSON = new JSONObject();
+        boolean lbisNew = false;
+        for(int lnCtr = 0; lnCtr <= poPayment.getDetailList().size()-1; lnCtr++){
+            if(poPayment.getDetailModel(lnCtr).getPayTrnCD() == null){
+                lbisNew = true;
+            } else {
+                if(poPayment.getDetailModel(lnCtr).getPayTrnCD().trim().isEmpty()){
+                    lbisNew = true;
+                }
+            }
+            
+            switch(poPayment.getDetailModel(lnCtr).getPayMode()){
+                case "CARD": //CREDIT CARD
+                    if(lbisNew){
+                        loJSON = poCreditcard.newTransaction();
+                    } else {
+                        loJSON = poCreditcard.openTransaction(poPayment.getDetailModel(lnCtr).getPayTrnCD());
+                        if(!"error".equals((String) loJSON.get("result"))){
+                            loJSON = poCreditcard.updateTransaction();
+                            if("error".equals((String) loJSON.get("result"))){
+                                return loJSON;
+                            }
+                        } else {
+                            return loJSON;
+                        }
+                    }
+                    
+                    if(!"error".equals((String) loJSON.get("result"))){
+                        poCreditcard.getMasterModel().setCardNo(poPayment.getDetailModel(lnCtr).getCCCardNo());
+                        poCreditcard.getMasterModel().setApprovNo(poPayment.getDetailModel(lnCtr).getCCApprovNo());
+                        poCreditcard.getMasterModel().setTraceNo(poPayment.getDetailModel(lnCtr).getCCTraceNo());
+                        poCreditcard.getMasterModel().setBankID(poPayment.getDetailModel(lnCtr).getCCBankID());
+                        poCreditcard.getMasterModel().setRemarks(poPayment.getDetailModel(lnCtr).getCCRemarks()); 
+                    
+                        loJSON = poCreditcard.saveTransaction();
+                        if(!"error".equals((String) loJSON.get("result"))){
+                            if(lbisNew){
+                                poPayment.getDetailModel(lnCtr).setPayTrnCD(poCreditcard.getMasterModel().getTransNo());
+                            }
+                        }
+                    }
+                break;
+            }
+        }
+        
+        return loJSON;
     }
     
     private JSONObject checkData(JSONObject joValue){
@@ -474,18 +530,59 @@ public class SalesInvoice implements GTransaction{
         return loJSON;
     }
     
-    public JSONObject searchBank(String fsValue) {
+    public JSONObject searchPaymentBank(String fsValue, int fnRow) {
+        JSONObject loJSON = new JSONObject();
+        Bank_Master loEntity = new Bank_Master(poGRider, pbWtParent,psBranchCd) ;
+        loJSON = loEntity.searchRecord(fsValue, true);
+        if(!"error".equals((String) loJSON.get("result"))){
+//            switch(fsPayMode){
+//                case "CARD":
+                    poPayment.getDetailModel(fnRow).setCCBankName((String) loJSON.get("sBankName"));
+                    poPayment.getDetailModel(fnRow).setCCBankID((String) loJSON.get("sBankIDxx"));
+//                break;
+//            }
+        } else {
+//            switch(fsPayMode){
+//                case "CARD":
+                    poPayment.getDetailModel(fnRow).setCCBankName("");
+                    poPayment.getDetailModel(fnRow).setCCBankID("");
+//                break;
+//            }
+        }
+        
+        return loJSON;
+    }
+    
+    public JSONObject searchBankBranch(String fsValue, int fnRow) {
         JSONObject loJSON = new JSONObject();
         Bank_Branches loEntity = new Bank_Branches(poGRider, pbWtParent, psBranchCd);
         loJSON = loEntity.searchRecord(fsValue, true);
         if(!"error".equals((String) loJSON.get("result"))){
-            poController.getMasterModel().setClientID((String) loJSON.get("sBrBankID"));
-            poController.getMasterModel().setBuyCltNm((String) loJSON.get("sBankName") + " / " + (String) loJSON.get("sBrBankNm"));
-            poController.getMasterModel().setAddress((String) loJSON.get("xAddressx"));
+            if(fnRow == 0){
+                poController.getMasterModel().setClientID((String) loJSON.get("sBrBankID"));
+                poController.getMasterModel().setBuyCltNm((String) loJSON.get("sBankName") + " / " + (String) loJSON.get("sBrBankNm"));
+                poController.getMasterModel().setAddress((String) loJSON.get("xAddressx"));
+            } else {
+//                switch(fsPayMode){
+//                    case "CHECK":
+////                        poPayment.getDetailModel(fnRow).setCCBankName((String) loJSON.get("sBankName"));
+////                        poPayment.getDetailModel(fnRow).setCCBankID((String) loJSON.get("sBankIDxx"));
+//                    break;
+//                }
+            }
         } else {
-            poController.getMasterModel().setClientID("");
-            poController.getMasterModel().setBuyCltNm("");
-            poController.getMasterModel().setAddress("");
+            if(fnRow == 0){
+                poController.getMasterModel().setClientID("");
+                poController.getMasterModel().setBuyCltNm("");
+                poController.getMasterModel().setAddress(""); 
+            } else {
+//                switch(fsPayMode){
+//                    case "CHECK":
+////                        poPayment.getDetailModel(fnRow).setCCBankName((String) loJSON.get("sBankName"));
+////                        poPayment.getDetailModel(fnRow).setCCBankID((String) loJSON.get("sBankIDxx"));
+//                    break;
+//                }
+            }
         }
         
         return loJSON;
