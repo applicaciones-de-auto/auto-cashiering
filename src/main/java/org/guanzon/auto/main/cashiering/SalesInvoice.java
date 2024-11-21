@@ -208,20 +208,25 @@ public class SalesInvoice implements GTransaction{
         }
         
         //UPDATE CAR BALANCE
-        poJSON = computeCARBalance(false);
-        if("error".equals((String) poJSON.get("result"))){
-            return poJSON;
+        JSONObject loJSON = new JSONObject();
+        loJSON = computeCARBalance(false);
+        if("error".equals((String) loJSON.get("result"))){
+            return loJSON;
         }
         
         //UPDATE SOA BALANCE
-        poJSON = computeSOABalance(false);
-        if("error".equals((String) poJSON.get("result"))){
-            return poJSON;
+        loJSON = computeSOABalance(false);
+        if("error".equals((String) loJSON.get("result"))){
+            return loJSON;
         }
         
         if (!pbWtParent) poGRider.commitTrans();
         
         return poJSON;
+    }
+    
+    public JSONObject savePrint() {
+        return poController.savePrinted();
     }
     
     private JSONObject saveOtherPayment(){
@@ -285,9 +290,9 @@ public class SalesInvoice implements GTransaction{
         return joValue;
     }
     
-    public JSONObject searchTransaction(String fsValue) {
+    public JSONObject searchTransaction(String fsValue, String fsReceiptType) {
         poJSON = new JSONObject();  
-        poJSON = poController.searchTransaction(fsValue);
+        poJSON = poController.searchReceipt(fsValue, fsReceiptType);
         if(!"error".equals(poJSON.get("result"))){
             poJSON = openTransaction((String) poJSON.get("sTransNox"));
         }

@@ -52,7 +52,7 @@ public class SalesInvoiceMaster  {
                         + "  , a.nVatAmtxx "                                                                                               
                         + "  , a.nNonVATSl "                                                                                               
                         + "  , a.nZroVATSl "                                                                                               
-                        + "  , a.cWTRatexx "                                                                                               
+                        + "  , a.nWTRatexx "                                                                                               
                         + "  , a.nCWTAmtxx "                                                                                               
                         + "  , a.nAdvPaymx "                                                                                               
                         + "  , a.nNetTotal "                                                                                               

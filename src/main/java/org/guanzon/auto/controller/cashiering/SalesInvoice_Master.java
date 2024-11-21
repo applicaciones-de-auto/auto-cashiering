@@ -21,6 +21,7 @@ import org.guanzon.appdriver.constant.TransactionStatus;
 import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.general.CancelForm;
 import org.guanzon.auto.general.SearchDialog;
+import org.guanzon.auto.general.TransactionStatusHistory;
 import org.guanzon.auto.model.cashiering.Model_SalesInvoice_Master;
 import org.guanzon.auto.model.sales.Model_VehicleDeliveryReceipt_Master;
 import org.guanzon.auto.validator.cashiering.ValidatorFactory;
@@ -188,6 +189,20 @@ public class SalesInvoice_Master implements GTransaction {
         return poJSON;
     }
     
+    public JSONObject savePrinted(){
+        JSONObject loJSON = new JSONObject();
+        poModel.setPrinted("1"); //Set to Printed
+        loJSON = saveTransaction();
+        if(!"error".equals((String) loJSON.get("result"))){
+            TransactionStatusHistory loEntity = new TransactionStatusHistory(poGRider);
+            loJSON = loEntity.updateStatusHistory(poModel.getTransNo(), poModel.getTable(), "VSI PRINT", "5"); //5 = STATE_PRINTED
+            if("error".equals((String) loJSON.get("result"))){
+                return loJSON;
+            }
+        }
+        return loJSON;
+    }
+    
     @Override
     public JSONObject deleteTransaction(String string) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -252,6 +267,41 @@ public class SalesInvoice_Master implements GTransaction {
     /**
      * Search SI Transaction
      * @param fsValue Reference No
+     * @param fsReceiptType Document Type
+     * @return 
+     */
+    public JSONObject searchReceipt(String fsValue, String fsReceiptType) {
+        String lsHeader = "SI Date»SI No»Customer»Address»Status"; 
+        String lsColName = "dTransact»sReferNox»sBuyCltNm»sAddressx»sTranStat"; 
+        String lsSQL = poModel.getSQL();
+        
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.cDocTypex LIKE " + SQLUtil.toSQL("%"+fsReceiptType)
+                                             + " AND a.sTransNox NOT IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
+        System.out.println(lsSQL);
+        JSONObject loJSON = SearchDialog.jsonSearch(
+                    poGRider,
+                    lsSQL,
+                    "",
+                    lsHeader,
+                    lsColName,
+                "0.1D»0.2D»0.4D»0.4D»0.2D", 
+                    "SALES INVOICE",
+                    0);
+
+        if (loJSON != null && !"error".equals((String) loJSON.get("result"))) {
+        }else {
+            loJSON = new JSONObject();
+            loJSON.put("result", "error");
+            loJSON.put("message", "No Transaction loaded.");
+            return loJSON;
+        }
+
+        return loJSON;
+    }
+    
+    /**
+     * Search SI Transaction
+     * @param fsValue Reference No
      * @return 
      */
     public JSONObject searchTransaction(String fsValue) {
@@ -268,7 +318,7 @@ public class SalesInvoice_Master implements GTransaction {
                     lsHeader,
                     lsColName,
                 "0.1D»0.2D»0.4D»0.4D»0.2D", 
-                    "SI",
+                    "VSI",
                     0);
 
         if (loJSON != null && !"error".equals((String) loJSON.get("result"))) {
