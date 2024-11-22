@@ -39,7 +39,7 @@ public class SalesInvoiceSource  {
         System.setProperty("sys.default.path.metadata", "D:/GGC_Maven_Systems/config/metadata/Model_SalesInvoice_Source.xml");
         
         
-        String lsSQL =    " SELECT "                 
+        String lsSQL =   " SELECT "                 
                         + "    a.sTransNox "         
                         + "  , a.sReferNox "         
                         + "  , a.sSourceCD "         
@@ -49,8 +49,15 @@ public class SalesInvoiceSource  {
                         + "  , a.nDiscount "         
                         + "  , a.nAdvusedx "         
                         + "  , a.nNetAmtxx "         
-                        + "  , a.nEntryNox "         
-                        + " FROM si_master_source a " 
+                        + "  , a.nEntryNox "
+                        + "  , IFNULL( aa.sReferNox,IFNULL(c.sVSPNOxxx, IFNULL(d.sReferNox, IFNULL(e.sReferNox,'')))) AS sFormNoxx "
+                        + "  , b.sSourceCD AS sDescript "
+                        + " FROM si_master_source a "                                              
+                        + " LEFT JOIN udr_master aa ON aa.sTransNox = a.sSourceNo "                
+                        + " LEFT JOIN cashier_receivables b ON b.sTransNox = a.sSourceNo "         
+                        + " LEFT JOIN vsp_master c ON c.sTransNox = b.sReferNox "                  
+                        + " LEFT JOIN customer_inquiry_reservation d ON d.sTransNox = b.sReferNox "
+                        + " LEFT JOIN insurance_policy_application e ON e.sTransNox = b.sReferNox "
                         + " WHERE 0=1";
         
         

@@ -163,14 +163,8 @@ public class SalesInvoice implements GTransaction{
     @Override
     public JSONObject saveTransaction() {
         poJSON = new JSONObject();  
-        //Validate CAR BALANCE
-        poJSON = computeCARBalance(true);
-        if("error".equals((String) poJSON.get("result"))){
-            return poJSON;
-        }
         
-        //Validate SOA BALANCE
-        poJSON = computeSOABalance(true);
+        poJSON = computeSIAmount();
         if("error".equals((String) poJSON.get("result"))){
             return poJSON;
         }
@@ -263,6 +257,7 @@ public class SalesInvoice implements GTransaction{
                         poCreditcard.getMasterModel().setTraceNo(poPayment.getDetailModel(lnCtr).getCCTraceNo());
                         poCreditcard.getMasterModel().setBankID(poPayment.getDetailModel(lnCtr).getCCBankID());
                         poCreditcard.getMasterModel().setRemarks(poPayment.getDetailModel(lnCtr).getCCRemarks()); 
+                        poCreditcard.getMasterModel().setAmount(poPayment.getDetailModel(lnCtr).getPayAmt()); 
                     
                         loJSON = poCreditcard.saveTransaction();
                         if(!"error".equals((String) loJSON.get("result"))){
@@ -427,6 +422,56 @@ public class SalesInvoice implements GTransaction{
             }
         }
         
+        BigDecimal ldblCheck = new BigDecimal("0.00");
+        BigDecimal ldblCC = new BigDecimal("0.00");
+        BigDecimal ldblGC = new BigDecimal("0.00");
+        BigDecimal ldblOtherAmt = new BigDecimal("0.00");
+        BigDecimal ldblCashAmt = new BigDecimal("0.00");
+        BigDecimal ldblPaidAmt = new BigDecimal("0.00");
+        for(lnCtr = 0;lnCtr <= poPayment.getDetailList().size()-1;lnCtr++){
+            switch(poPayment.getDetailModel(lnCtr).getPayMode()){
+                case "CARD":
+                    ldblCC = ldblCC.add(poPayment.getDetailModel(lnCtr).getPayAmt());
+                break;
+                case "CHECK":
+                    ldblCheck = ldblCheck.add(poPayment.getDetailModel(lnCtr).getPayAmt());
+                break;
+                case "GC":
+                    ldblGC = ldblGC.add(poPayment.getDetailModel(lnCtr).getPayAmt());
+                break;
+                default:
+                    ldblOtherAmt = ldblOtherAmt.add(poPayment.getDetailModel(lnCtr).getPayAmt());
+            }
+        
+        }
+        
+        ldblCashAmt = ldblNetTotl.subtract(ldblCheck).subtract(ldblCC).subtract(ldblGC).subtract(ldblOtherAmt);
+        ldblPaidAmt = poController.getMasterModel().getCashAmt().add(ldblCC).add(ldblGC).add(ldblCheck).add(ldblOtherAmt);
+        
+        
+        if(ldblPaidAmt.compareTo(ldblNetTotl) > 0){
+            loJSON.put("result", "error");
+            loJSON.put("message", "Invalid Total Paid Amount.");
+            return loJSON;
+        }
+        
+        if(ldblCashAmt.compareTo(new BigDecimal("0.00")) < 0){
+            loJSON.put("result", "error");
+            loJSON.put("message", "Invalid Total Cash Amount.");
+            return loJSON;
+        }
+        
+        poController.getMasterModel().setCardAmt(ldblCC);
+        poController.getMasterModel().setChckAmt(ldblCheck);
+        poController.getMasterModel().setGiftAmt(ldblGC);
+        poController.getMasterModel().setOthrAmt(ldblOtherAmt);
+        poController.getMasterModel().setCashAmt(ldblCashAmt);
+        poController.getMasterModel().setAmtPaid(ldblPaidAmt);
+        poController.getMasterModel().setTranTotl(ldblTranTotl);
+        poController.getMasterModel().setAdvPaym(ldblAdvPaym);
+        poController.getMasterModel().setDiscount(ldblDiscount);
+        poController.getMasterModel().setNetTotal(ldblNetTotl);
+        
         loJSON = computeCARBalance(true);
         if("error".equals((String) loJSON.get("result"))){
             return loJSON;
@@ -437,28 +482,32 @@ public class SalesInvoice implements GTransaction{
             return loJSON;
         }
         
-        poController.getMasterModel().setTranTotl(ldblTranTotl);
-        poController.getMasterModel().setAdvPaym(ldblAdvPaym);
-        poController.getMasterModel().setDiscount(ldblDiscount);
-        poController.getMasterModel().setNetTotal(ldblNetTotl);
-        
         return loJSON;
     }
     
-    public JSONObject computeCARBalance(boolean fisValidate){
+    private JSONObject computeCARBalance(boolean fisValidate){
         JSONObject loJSON = new JSONObject();
+        BigDecimal ldblOthPaidAmt = new BigDecimal("0.00");
         BigDecimal ldblPaidAmt = new BigDecimal("0.00");
         
         for(int lnCtr = 0; lnCtr <= psCARTransCde.size()-1; lnCtr++){
-            ldblPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
-            ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt);
+            //Get SI Payment
+            for(int lnRow = 0;lnRow <= poDetail.getDetailList().size()-1;lnRow++){
+                if(psCARTransCde.get(lnCtr).equals(poDetail.getDetailModel(lnRow).getSourceNo())){
+                    ldblPaidAmt = ldblPaidAmt.add(poDetail.getDetailModel(lnRow).getTranAmt());
+                }
+            }
+           
+            ldblOthPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
+            //CAR TOTAL - (OTHER PAYMENT + CURRENT RECEIPT PAYMENT)
+            ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
             
             if(fisValidate){
                 // Get the default locale or specify one
                 NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
                 if(ldblPaidAmt.compareTo(new BigDecimal("0.00")) < 0){
                     loJSON.put("result", "error");
-                    loJSON.put("result", "Invalid CAR Balance " + numberFormat.format(ldblPaidAmt) 
+                    loJSON.put("message", "Invalid CAR Balance " + numberFormat.format(ldblPaidAmt) 
                             + " computed for CAR No. " + poCAR.getMasterModel().getTransNo() 
                             + ".\n\nPlease check your CAR Total vs Total Payment.");
                     return loJSON;
@@ -482,20 +531,30 @@ public class SalesInvoice implements GTransaction{
         return loJSON;
     }
     
-    public JSONObject computeSOABalance(boolean fisValidate){
+    private JSONObject computeSOABalance(boolean fisValidate){
         JSONObject loJSON = new JSONObject();
+        BigDecimal ldblOthPaidAmt = new BigDecimal("0.00");
         BigDecimal ldblPaidAmt = new BigDecimal("0.00");
         
         for(int lnCtr = 0; lnCtr <= psSOATransCde.size()-1; lnCtr++){
-            ldblPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
-            ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt);
+            
+            //Get SI Payment
+            for(int lnRow = 0;lnRow <= poDetail.getDetailList().size()-1;lnRow++){
+                if(psSOATransCde.get(lnCtr).equals(poDetail.getDetailModel(lnRow).getSourceNo())){
+                    ldblPaidAmt = ldblPaidAmt.add(poDetail.getDetailModel(lnRow).getTranAmt());
+                }
+            }
+            
+            ldblOthPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
+            //CAR TOTAL - (OTHER PAYMENT + CURRENT RECEIPT PAYMENT)
+            ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
             
             if(fisValidate){
                 // Get the default locale or specify one
                 NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
                 if(ldblPaidAmt.compareTo(new BigDecimal("0.00")) < 0){
                     loJSON.put("result", "error");
-                    loJSON.put("result", "Invalid SOA Balance " + numberFormat.format(ldblPaidAmt) 
+                    loJSON.put("message", "Invalid SOA Balance " + numberFormat.format(ldblPaidAmt) 
                             + " computed for SOA No. " + poCAR.getMasterModel().getTransNo() 
                             + ".\n\nPlease check your SOA Total vs Total Payment.");
                     return loJSON;
