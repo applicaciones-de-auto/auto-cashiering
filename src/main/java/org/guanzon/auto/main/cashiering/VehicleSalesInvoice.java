@@ -144,7 +144,7 @@ public class VehicleSalesInvoice implements GTransaction{
     }
     
     public JSONObject savePrint(boolean fsIsValidate) {
-        return poController.savePrinted(fsIsValidate);
+        return poController.savePrinted(fsIsValidate,"VSI");
     }
     
     private JSONObject checkData(JSONObject joValue){

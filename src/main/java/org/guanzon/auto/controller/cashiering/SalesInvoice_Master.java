@@ -189,25 +189,27 @@ public class SalesInvoice_Master implements GTransaction {
         return poJSON;
     }
     
-    public JSONObject savePrinted(boolean fsIsValidate){
+    public JSONObject savePrinted(boolean fsIsValidate, String fsFormType){
         JSONObject loJSON = new JSONObject();
+        String lsOrigPrint = poModel.getPrinted();
         poModel.setPrinted("1"); //Set to Printed
         if(fsIsValidate){
             ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.SalesInvoice_Master, poModel);
             validator.setGRider(poGRider);
             if (!validator.isEntryOkay()){
-                poModel.setPrinted("0"); //Revert to Previous Value
+                poModel.setPrinted(lsOrigPrint); //Revert to Previous Value
                 poJSON.put("result", "error");
                 poJSON.put("message", validator.getMessage());
                 return poJSON;
             }
-        } 
-        loJSON = saveTransaction();
-        if(!"error".equals((String) loJSON.get("result"))){
-            TransactionStatusHistory loEntity = new TransactionStatusHistory(poGRider);
-            loJSON = loEntity.updateStatusHistory(poModel.getTransNo(), poModel.getTable(), "VSI PRINT", "5"); //5 = STATE_PRINTED
-            if("error".equals((String) loJSON.get("result"))){
-                return loJSON;
+        } else {
+            loJSON = saveTransaction();
+            if(!"error".equals((String) loJSON.get("result"))){
+                TransactionStatusHistory loEntity = new TransactionStatusHistory(poGRider);
+                loJSON = loEntity.updateStatusHistory(poModel.getTransNo(), poModel.getTable(), fsFormType + " PRINT", "5"); //5 = STATE_PRINTED
+                if("error".equals((String) loJSON.get("result"))){
+                    return loJSON;
+                }
             }
         }
         return loJSON;

@@ -220,7 +220,7 @@ public class SalesInvoice implements GTransaction{
     }
     
     public JSONObject savePrint(boolean fsIsValidate) {
-        return poController.savePrinted(fsIsValidate);
+        return poController.savePrinted(fsIsValidate, "SI");
     }
     
     private JSONObject saveOtherPayment(){
