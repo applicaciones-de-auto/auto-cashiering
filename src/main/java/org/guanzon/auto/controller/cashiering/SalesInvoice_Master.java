@@ -189,9 +189,19 @@ public class SalesInvoice_Master implements GTransaction {
         return poJSON;
     }
     
-    public JSONObject savePrinted(){
+    public JSONObject savePrinted(boolean fsIsValidate){
         JSONObject loJSON = new JSONObject();
         poModel.setPrinted("1"); //Set to Printed
+        if(fsIsValidate){
+            ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.SalesInvoice_Master, poModel);
+            validator.setGRider(poGRider);
+            if (!validator.isEntryOkay()){
+                poModel.setPrinted("0"); //Revert to Previous Value
+                poJSON.put("result", "error");
+                poJSON.put("message", validator.getMessage());
+                return poJSON;
+            }
+        } 
         loJSON = saveTransaction();
         if(!"error".equals((String) loJSON.get("result"))){
             TransactionStatusHistory loEntity = new TransactionStatusHistory(poGRider);
