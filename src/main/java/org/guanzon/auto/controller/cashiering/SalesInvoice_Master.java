@@ -206,7 +206,7 @@ public class SalesInvoice_Master implements GTransaction {
             loJSON = saveTransaction();
             if(!"error".equals((String) loJSON.get("result"))){
                 TransactionStatusHistory loEntity = new TransactionStatusHistory(poGRider);
-                loJSON = loEntity.updateStatusHistory(poModel.getTransNo(), poModel.getTable(), fsFormType + " PRINT", "5"); //5 = STATE_PRINTED
+                loJSON = loEntity.updateStatusHistory(poModel.getTransNo(), poModel.getTable(), fsFormType, "5", "PRINT"); //5 = STATE_PRINTED
                 if("error".equals((String) loJSON.get("result"))){
                     return loJSON;
                 }

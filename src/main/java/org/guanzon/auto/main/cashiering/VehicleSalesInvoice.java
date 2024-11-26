@@ -375,7 +375,8 @@ public class VehicleSalesInvoice implements GTransaction{
         ldblVatSales = ldblUnitPrice - ldblVatAmt;
         poController.getMasterModel().setVatSales(new BigDecimal(ldblVatSales)); 
         poController.getMasterModel().setVatAmt(new BigDecimal(ldblVatAmt)); 
-        poController.getMasterModel().setTranTotl(new BigDecimal(ldblTranTotl)); 
+        poController.getMasterModel().setTranTotl(poVSISource.getDetailModel().getUnitPrce()); 
+        poController.getMasterModel().setNetTotal(new BigDecimal(ldblTranTotl)); 
         return loJSON;
     }
 //    
