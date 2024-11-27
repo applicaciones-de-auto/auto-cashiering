@@ -164,7 +164,7 @@ public class SalesInvoice implements GTransaction{
     public JSONObject saveTransaction() {
         poJSON = new JSONObject();  
         
-        poJSON = computeSIAmount();
+        poJSON = computeSIAmount(true);
         if("error".equals((String) poJSON.get("result"))){
             return poJSON;
         }
@@ -370,7 +370,7 @@ public class SalesInvoice implements GTransaction{
 //    
 //    public ArrayList getMasterList(){return poController.getDetailList();}
     
-    public JSONObject computeSIAmount(){
+    public JSONObject computeSIAmount(boolean fsValidate){
         if(psCARTransCde == null){
             psCARTransCde = new ArrayList();
         }
@@ -388,10 +388,12 @@ public class SalesInvoice implements GTransaction{
         //Update TOTAL amount's in SI MASTER
         for(lnCtr = 0; lnCtr <= poDetail.getDetailList().size()-1; lnCtr++){
             ldblNetAmt = poDetail.getDetailModel(lnCtr).getTranAmt().subtract(poDetail.getDetailModel(lnCtr).getAdvused()).subtract(poDetail.getDetailModel(lnCtr).getDiscount());
-            if(ldblNetAmt.compareTo(new BigDecimal("0.00")) < 0){
-                loJSON.put("result", "error");
-                loJSON.put("message", "Invalid Net Amount.");
-                return loJSON;
+            if(fsValidate){
+                if(ldblNetAmt.compareTo(new BigDecimal("0.00")) < 0){
+                    loJSON.put("result", "error");
+                    loJSON.put("message", "Invalid Net Amount.");
+                    return loJSON;
+                }
             }
             
             poDetail.getDetailModel(lnCtr).setNetAmt(ldblNetAmt);
@@ -446,19 +448,19 @@ public class SalesInvoice implements GTransaction{
         }
         
         ldblCashAmt = ldblNetTotl.subtract(ldblCheck).subtract(ldblCC).subtract(ldblGC).subtract(ldblOtherAmt);
-        ldblPaidAmt = poController.getMasterModel().getCashAmt().add(ldblCC).add(ldblGC).add(ldblCheck).add(ldblOtherAmt);
-        
-        
-        if(ldblPaidAmt.compareTo(ldblNetTotl) > 0){
-            loJSON.put("result", "error");
-            loJSON.put("message", "Invalid Total Paid Amount.");
-            return loJSON;
-        }
-        
-        if(ldblCashAmt.compareTo(new BigDecimal("0.00")) < 0){
-            loJSON.put("result", "error");
-            loJSON.put("message", "Invalid Total Cash Amount.");
-            return loJSON;
+        ldblPaidAmt = ldblCashAmt.add(ldblCC).add(ldblGC).add(ldblCheck).add(ldblOtherAmt);
+        if(fsValidate){
+            if(ldblPaidAmt.compareTo(ldblNetTotl) > 0){
+                loJSON.put("result", "error");
+                loJSON.put("message", "Invalid Total Paid Amount.");
+                return loJSON;
+            }
+
+            if(ldblCashAmt.compareTo(new BigDecimal("0.00")) < 0){
+                loJSON.put("result", "error");
+                loJSON.put("message", "Invalid Total Cash Amount.");
+                return loJSON;
+            }
         }
         
         poController.getMasterModel().setCardAmt(ldblCC);
@@ -500,9 +502,11 @@ public class SalesInvoice implements GTransaction{
            
             ldblOthPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
             //CAR TOTAL - (OTHER PAYMENT + CURRENT RECEIPT PAYMENT)
-            ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
+//            ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
+            ldblPaidAmt = ldblPaidAmt.add(ldblOthPaidAmt);
             
             if(fisValidate){
+                ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt);
                 // Get the default locale or specify one
                 NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
                 if(ldblPaidAmt.compareTo(new BigDecimal("0.00")) < 0){
@@ -547,9 +551,11 @@ public class SalesInvoice implements GTransaction{
             
             ldblOthPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
             //CAR TOTAL - (OTHER PAYMENT + CURRENT RECEIPT PAYMENT)
-            ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
+//                ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
+            ldblPaidAmt = ldblPaidAmt.add(ldblOthPaidAmt);
             
             if(fisValidate){
+                ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt);
                 // Get the default locale or specify one
                 NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
                 if(ldblPaidAmt.compareTo(new BigDecimal("0.00")) < 0){
@@ -586,9 +592,12 @@ public class SalesInvoice implements GTransaction{
             poController.getMasterModel().setClientID((String) loJSON.get("sClientID"));
             poController.getMasterModel().setBuyCltNm((String) loJSON.get("sCompnyNm"));
             poController.getMasterModel().setAddress((String) loJSON.get("xAddressx"));
+            poController.getMasterModel().setTaxIDNo((String) loJSON.get("sTaxIDNox"));
         } else {
             poController.getMasterModel().setClientID("");
             poController.getMasterModel().setAddress("");
+            poController.getMasterModel().setBuyCltNm("");
+            poController.getMasterModel().setTaxIDNo("");
         }
         
         return loJSON;
@@ -709,20 +718,36 @@ public class SalesInvoice implements GTransaction{
                 poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
                 poController.getMasterModel().setBuyCltNm(loEntity.getMasterModel().getMasterModel().getPayerNme());
                 poController.getMasterModel().setAddress(loEntity.getMasterModel().getMasterModel().getPayerAdd());
+                poController.getMasterModel().setTaxIDNo(loEntity.getMasterModel().getMasterModel().getTaxIDNo());
             } else {
                 if(poController.getMasterModel().getClientID().trim().isEmpty()){
                     poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
                     poController.getMasterModel().setBuyCltNm(loEntity.getMasterModel().getMasterModel().getPayerNme());
                     poController.getMasterModel().setAddress(loEntity.getMasterModel().getMasterModel().getPayerAdd());
+                    poController.getMasterModel().setTaxIDNo(loEntity.getMasterModel().getMasterModel().getTaxIDNo());
                 }
             }
             
             for(int lnCtr = 0; lnCtr <= loEntity.getDetailList().size()-1;lnCtr++){
                 addSIDetail();
                 poDetail.getDetailModel(getSIDetailList().size()-1).setSourceNo(loEntity.getMasterModel().getMasterModel().getTransNo());
-                poDetail.getDetailModel(getSIDetailList().size()-1).setSourceCD(loEntity.getMasterModel().getMasterModel().getSourceCD());
+                poDetail.getDetailModel(getSIDetailList().size()-1).setDescript(loEntity.getMasterModel().getMasterModel().getSourceCD());
+                poDetail.getDetailModel(getSIDetailList().size()-1).setFormNo(loEntity.getMasterModel().getMasterModel().getFormNo());
+                
                 poDetail.getDetailModel(getSIDetailList().size()-1).setTranType(loEntity.getDetailModel().getDetailModel(lnCtr).getTranType());
                 poDetail.getDetailModel(getSIDetailList().size()-1).setTranAmt(loEntity.getDetailModel().getDetailModel(lnCtr).getTotalAmt());
+                poDetail.getDetailModel(getSIDetailList().size()-1).setNetAmt(loEntity.getDetailModel().getDetailModel(lnCtr).getTotalAmt());
+                
+                if (loEntity.getMasterModel().getMasterModel().getVSPNo() != null) {
+                    poDetail.getDetailModel(getSIDetailList().size()-1).setSourceCD("VSP");
+                }
+                if (loEntity.getMasterModel().getMasterModel().getVSANo() != null) {
+                    poDetail.getDetailModel(getSIDetailList().size()-1).setSourceCD("VSA");
+                }
+                if (loEntity.getMasterModel().getMasterModel().getInsAppNo() != null) {
+                    poDetail.getDetailModel(getSIDetailList().size()-1).setSourceCD("POL");
+                }
+                
             }
         } 
         return loJSON;

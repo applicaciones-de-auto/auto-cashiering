@@ -261,8 +261,8 @@ public class CashierReceivables_Master implements GTransaction{
     
     
     public JSONObject searchTransaction(String fsValue, boolean fbByCode) {
-        String lsHeader = "CAR Date»CAR No»Payer Name";
-        String lsColName = "dTransact»sTransNox»sPayerNme";
+        String lsHeader = "CAR Date»CAR No»Payer Name»Payer Address";
+        String lsColName = "dTransact»sTransNox»sPayerNme»sPayerAdd";
         String lsSQL = poModel.getSQL();
         System.out.println(lsSQL);
         JSONObject loJSON = SearchDialog.jsonSearch(
@@ -271,7 +271,7 @@ public class CashierReceivables_Master implements GTransaction{
                     "",
                     lsHeader,
                     lsColName,
-                "0.1D»0.2D»0.3D", 
+                "0.1D»0.2D»0.3D»0.3D", 
                     "CASHIER RECEIVABLES",
                     0);
             
