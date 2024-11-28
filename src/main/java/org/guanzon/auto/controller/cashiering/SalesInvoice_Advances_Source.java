@@ -8,6 +8,8 @@ package org.guanzon.auto.controller.cashiering;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.base.SQLUtil;
@@ -83,14 +85,18 @@ public class SalesInvoice_Advances_Source implements GTranDet {
         return poJSON;
     }
     
-    public JSONObject openDetail(String fsValue){
+    public JSONObject openDetail(String fsValue, boolean fbIsTransNo){
         paDetail = new ArrayList<>();
         paRemDetail = new ArrayList<>();
         poJSON = new JSONObject();
         Model_SalesInvoice_Advances_Source loEntity = new Model_SalesInvoice_Advances_Source(poGRider);
         String lsSQL =   loEntity.makeSelectSQL();
-        lsSQL = MiscUtil.addCondition(lsSQL, " sReferNox = " + SQLUtil.toSQL(fsValue))
-                                                + "  ORDER BY nEntryNox ASC " ;
+        if(fbIsTransNo){
+            lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, " sReferNox = " + SQLUtil.toSQL(fsValue))
+                                                    + "  ORDER BY nEntryNox ASC " ;
+        }
         System.out.println(lsSQL);
         ResultSet loRS = poGRider.executeQuery(lsSQL);
         
@@ -164,7 +170,6 @@ public class SalesInvoice_Advances_Source implements GTranDet {
             }
             
             paDetail.get(lnCtr).setReferNo(fsTransNo);
-            paDetail.get(lnCtr).setEntryNo(lnCtr+1);
 //            paDetail.get(lnCtr).setTargetBranchCd(psTargetBranchCd);
             
             ValidatorInterface validator = ValidatorFactory.make(ValidatorFactory.TYPE.SalesInvoice_Advances_Source, paDetail.get(lnCtr));
@@ -331,6 +336,34 @@ public class SalesInvoice_Advances_Source implements GTranDet {
     @Override
     public void setTransactionStatus(String string) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    public JSONObject checkSIAdvancesExist(String fsSITranNo){
+        JSONObject loJSON = new JSONObject();
+        try {
+            String lsID = "";
+            Model_SalesInvoice_Advances_Source loEntity = new Model_SalesInvoice_Advances_Source(poGRider);
+            String lsSQL = loEntity.getSQL();
+            //Validate exisiting VSI Number
+            lsSQL = MiscUtil.addCondition(lsSQL, " a.sReferNox = " + SQLUtil.toSQL(fsSITranNo));
+            System.out.println("EXISTING SI ADVANCES CHECK: " + lsSQL);
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            if (MiscUtil.RecordCount(loRS) > 0){
+                    while(loRS.next()){
+                        lsID = loRS.getString("sTransNox");
+                    }
+
+                    MiscUtil.close(loRS);
+                    loJSON.put("result", "success");
+                    loJSON.put("sTransNox", lsID);
+                    return loJSON;
+            } 
+        
+        } catch (SQLException ex) {
+            Logger.getLogger(SalesInvoice_Advances_Source.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return loJSON;
     }
     
 }

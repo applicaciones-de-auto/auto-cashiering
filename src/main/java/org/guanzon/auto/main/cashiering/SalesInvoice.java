@@ -50,6 +50,7 @@ public class SalesInvoice implements GTransaction{
     SalesInvoice_Source poDetail;
     SalesInvoice_Payment poPayment;
     SalesInvoice_Advances_Source poAdvances;
+    SalesInvoice_Advances_Source poDeductibles;
     CashierReceivables_Master poCAR;
     StatementOfAccount_Master poSOA;
     Credicard_Trans poCreditcard;
@@ -64,6 +65,7 @@ public class SalesInvoice implements GTransaction{
         poDetail = new SalesInvoice_Source(foAppDrver);
         poPayment = new SalesInvoice_Payment(foAppDrver);
         poAdvances = new SalesInvoice_Advances_Source(foAppDrver);
+        poDeductibles = new SalesInvoice_Advances_Source(foAppDrver);
         poCAR = new CashierReceivables_Master(foAppDrver,fbWtParent,fsBranchCd);
         poSOA = new StatementOfAccount_Master(foAppDrver,fbWtParent,fsBranchCd);
         poCreditcard = new Credicard_Trans(foAppDrver,fbWtParent,fsBranchCd);
@@ -138,11 +140,17 @@ public class SalesInvoice implements GTransaction{
             return poJSON;
         }
         
-        poJSON = poAdvances.openDetail(fsValue);
-        if(!"success".equals((String) checkData(poJSON).get("result"))){
-            pnEditMode = EditMode.UNKNOWN;
-            return poJSON;
-        }
+//        poJSON = poAdvances.openDetail(fsValue, false);
+//        if(!"success".equals((String) checkData(poJSON).get("result"))){
+//            pnEditMode = EditMode.UNKNOWN;
+//            return poJSON;
+//        }
+        
+//        poJSON = poDeductibles.openDetail(fsValue);
+//        if(!"success".equals((String) checkData(poJSON).get("result"))){
+//            pnEditMode = EditMode.UNKNOWN;
+//            return poJSON;
+//        }
         
         poJSON = poPayment.openDetail(fsValue);
         if(!"success".equals((String) checkData(poJSON).get("result"))){
@@ -192,11 +200,17 @@ public class SalesInvoice implements GTransaction{
             return checkData(poJSON);
         }
         
-        poJSON =  poAdvances.saveDetail((String) poController.getMasterModel().getTransNo());
-        if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
-            if (!pbWtParent) poGRider.rollbackTrans();
-            return checkData(poJSON);
-        }
+//        poJSON = populateAdvances((String) poController.getMasterModel().getTransNo());
+//        if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
+//            if (!pbWtParent) poGRider.rollbackTrans();
+//            return checkData(poJSON);
+//        }
+//        
+//        poJSON =  poAdvances.saveDetail((String) poController.getMasterModel().getTransNo());
+//        if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
+//            if (!pbWtParent) poGRider.rollbackTrans();
+//            return checkData(poJSON);
+//        }
         
         poJSON =  poPayment.saveDetail((String) poController.getMasterModel().getTransNo());
         if("error".equalsIgnoreCase((String)checkData(poJSON).get("result"))){
@@ -269,6 +283,37 @@ public class SalesInvoice implements GTransaction{
                             }
                         }
                     }
+                break;
+                
+                case "GC": //GIFT CHECK
+                    if(lbisNew){
+                        loJSON = poGiftCheck.newTransaction();
+                    } else {
+                        loJSON = poGiftCheck.openTransaction(poPayment.getDetailModel(lnCtr).getPayTrnCD());
+                        if(!"error".equals((String) loJSON.get("result"))){
+                            loJSON = poGiftCheck.updateTransaction();
+                            if("error".equals((String) loJSON.get("result"))){
+                                return loJSON;
+                            }
+                        } else {
+                            return loJSON;
+                        }
+                    }
+                    
+                    if(!"error".equals((String) loJSON.get("result"))){
+                        poGiftCheck.getMasterModel().setGCertNo(poPayment.getDetailModel(lnCtr).getGCertNo());
+                        poGiftCheck.getMasterModel().setPayLoad(poPayment.getDetailModel(lnCtr).getGCPayLod());
+                        poGiftCheck.getMasterModel().setRemarks(poPayment.getDetailModel(lnCtr).getGCRemrks()); 
+                        poGiftCheck.getMasterModel().setAmount(poPayment.getDetailModel(lnCtr).getPayAmt()); 
+                    
+                        loJSON = poGiftCheck.saveTransaction();
+                        if(!"error".equals((String) loJSON.get("result"))){
+                            if(lbisNew){
+                                poPayment.getDetailModel(lnCtr).setPayTrnCD(poGiftCheck.getMasterModel().getTransNo());
+                            }
+                        }
+                    }
+                    
                 break;
             }
         }
@@ -361,6 +406,11 @@ public class SalesInvoice implements GTransaction{
     public ArrayList getSIAdvancesList(){return poAdvances.getDetailList();}
     public Object addSIAdvances(){ return poAdvances.addDetail(poController.getMasterModel().getTransNo());}
     public Object removeSIAdvances(int fnRow){ return poAdvances.removeDetail(fnRow);}
+    
+    public SalesInvoice_Advances_Source getSIDeductibleModel() {return poDeductibles;}
+    public ArrayList getSIDeductibleList(){return poDeductibles.getDetailList();}
+    public Object addSIDeductible(){ return poDeductibles.addDetail(poController.getMasterModel().getTransNo());}
+    public Object removeSIDeductible(int fnRow){ return poDeductibles.removeDetail(fnRow);}
     
     @Override
     public void setTransactionStatus(String string) {
@@ -485,6 +535,50 @@ public class SalesInvoice implements GTransaction{
         loJSON = computeSOABalance(true);
         if("error".equals((String) loJSON.get("result"))){
             return loJSON;
+        }
+        
+        return loJSON;
+    }
+    
+    private JSONObject computeADVBalance(boolean fisValidate){
+        JSONObject loJSON = new JSONObject();
+        for(int lnCtr = 0; lnCtr <= getSIAdvancesList().size()-1; lnCtr++){
+            
+            
+        }
+        
+        return loJSON;
+    }
+    
+    private JSONObject populateAdvances(String fsValue){
+        JSONObject loJSON = new JSONObject();
+        BigDecimal ldblTotlAdv = new BigDecimal("0.00");
+        for(int lnCtr = 0; lnCtr <= poDetail.getDetailList().size()-1; lnCtr++){
+            //SUM SI Total Advances
+            if(poDetail.getDetailModel(lnCtr).getTranType().equals("ADVANCES")){
+                ldblTotlAdv = ldblTotlAdv.add(poDetail.getDetailModel(lnCtr).getTranAmt());
+            }
+        }
+        
+        //1. Check when SI exist in SI Advances
+        loJSON = poAdvances.checkSIAdvancesExist(fsValue);
+        if("success".equals((String) loJSON.get("result"))){
+            //Update SI Advances
+            loJSON = poAdvances.openDetail((String) loJSON.get("sTransNox"), true);
+            if("error".equals((String) loJSON.get("result"))){
+                return loJSON;
+            }
+        } else {
+            //Create New SI Advances
+            if(ldblTotlAdv.compareTo(new BigDecimal("0.00")) > 0){
+                addSIAdvances();
+                poAdvances.getDetailModel( getSIAdvancesList().size()-1).setReferNo(fsValue);
+                poAdvances.getDetailModel( getSIAdvancesList().size()-1).setEntryNo(0);
+            }
+        }
+        
+        if( poAdvances.getDetailList().size()>0){
+            poAdvances.getDetailModel( getSIAdvancesList().size()-1).setAdvAmt(ldblTotlAdv);
         }
         
         return loJSON;
