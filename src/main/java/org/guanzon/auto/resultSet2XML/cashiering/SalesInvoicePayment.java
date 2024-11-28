@@ -39,7 +39,7 @@ public class SalesInvoicePayment  {
         System.setProperty("sys.default.path.metadata", "D:/GGC_Maven_Systems/config/metadata/Model_SalesInvoice_Payment.xml");
         
         
-        String lsSQL =   " SELECT "                 
+        String lsSQL =   " SELECT "           
                         + "    a.sTransNox "         
                         + "  , a.sPayModex "         
                         + "  , a.nPayAmtxx "         
@@ -50,9 +50,26 @@ public class SalesInvoicePayment  {
                         + "  , b.sTraceNox "          
                         + "  , b.sRemarksx " 
                         + "  , c.sBankName "
+                        + "  , d.sGCertNox "             
+                        + "  , d.sPayLoadx AS sGCPayLod "
+                        + "  , d.sRemarksx AS sGCRemrks "
                         + " FROM si_master_payment a "
                         + " LEFT JOIN credit_card_trans b ON b.sTransNox = a.sPayTrnCD AND b.cTranStat <> " + SQLUtil.toSQL(TransactionStatus.STATE_CANCELLED)
                         + " LEFT JOIN banks c ON c.sBankIDxx = b.sBankIDxx "
+                        + " LEFT JOIN gift_check d ON d.sTransNox = a.sPayTrnCD  "
+//                        + "    a.sTransNox "         
+//                        + "  , a.sPayModex "         
+//                        + "  , a.nPayAmtxx "         
+//                        + "  , a.sPayTrnCD "          
+//                        + "  , b.sBankIDxx "          
+//                        + "  , b.sCardNoxx "          
+//                        + "  , b.sApprovNo "          
+//                        + "  , b.sTraceNox "          
+//                        + "  , b.sRemarksx " 
+//                        + "  , c.sBankName "
+//                        + " FROM si_master_payment a "
+//                        + " LEFT JOIN credit_card_trans b ON b.sTransNox = a.sPayTrnCD AND b.cTranStat <> " + SQLUtil.toSQL(TransactionStatus.STATE_CANCELLED)
+//                        + " LEFT JOIN banks c ON c.sBankIDxx = b.sBankIDxx "
                         + " WHERE 0=1";
         
         
