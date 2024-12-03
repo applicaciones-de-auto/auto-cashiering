@@ -1,18 +1,10 @@
 
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import org.guanzon.appdriver.base.GRider;
-import org.guanzon.auto.main.cashiering.CashierReceivables;
+import org.guanzon.auto.main.cashiering.StatementOfAccount;
 import org.json.simple.JSONObject;
 import org.junit.AfterClass;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
-import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 /*
@@ -26,12 +18,12 @@ import org.junit.runners.MethodSorters;
  * @author Arsiela
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class CashierReceivablesTest {
-    static CashierReceivables model;
+public class StatementOfAccountTest { 
+    static StatementOfAccount model;
     JSONObject json;
     boolean result;
     static GRider instance;
-    public CashierReceivablesTest(){}
+    public StatementOfAccountTest(){}
     
     @BeforeClass
     public static void setUpClass() {   
@@ -56,7 +48,7 @@ public class CashierReceivablesTest {
         JSONObject json;
         
         System.out.println("sBranch code = " + instance.getBranchCode());
-        model = new CashierReceivables(instance,false, instance.getBranchCode());
+        model = new StatementOfAccount(instance,false, instance.getBranchCode());
     }
     
     @AfterClass
@@ -175,23 +167,6 @@ public class CashierReceivablesTest {
 //            System.out.println("sInsNamex  :  " + model.getMasterModel().getMasterModel().getInsName());         
 //            System.out.println("sInsAddrx  :  " + model.getMasterModel().getMasterModel().getInsAddr());   
 //            
-//            
-//            System.out.println("--------------------------------------------------------------------");
-//            System.out.println("CASHIER RECEIVABLES DETAIL");
-//            System.out.println("--------------------------------------------------------------------");
-//            
-//            for(int lnCtr = 0; lnCtr <= model.getDetailList().size()-1;lnCtr++){     
-//                System.out.println("sTransNox  :  " + model.getDetailModel().getDetailModel(lnCtr).getTransNo());     
-//                System.out.println("nEntryNox  :  " + model.getDetailModel().getDetailModel(lnCtr).getEntryNo());        
-//                System.out.println("sTranType  :  " + model.getDetailModel().getDetailModel(lnCtr).getTranType());       
-//                System.out.println("nGrossAmt  :  " + model.getDetailModel().getDetailModel(lnCtr).getGrossAmt());       
-//                System.out.println("nDiscAmtx  :  " + model.getDetailModel().getDetailModel(lnCtr).getDiscAmt());         
-//                System.out.println("nDeductnx  :  " + model.getDetailModel().getDetailModel(lnCtr).getDeductn());      
-//                System.out.println("nTotalAmt  :  " + model.getDetailModel().getDetailModel(lnCtr).getTotalAmt());         
-//                System.out.println("nAmtPaidx  :  " + model.getDetailModel().getDetailModel(lnCtr).getAmtPaid());
-//                System.out.println("--------------------------------------------------------------------");
-//            }
-//            
 //            result = true;
 //        }
 //        assertTrue(result);
@@ -269,54 +244,4 @@ public class CashierReceivablesTest {
 //        LocalDate localDate = LocalDate.parse(val, date_formatter);
 //        return localDate;
 //    }
-//    
-//    @Test
-//    public void test04loadRecord(){
-////        System.out.println("--------------------------------------------------------------------");
-////        System.out.println("------------------------------LOAD TRANSACTIONS--------------------------------------");
-////        System.out.println("--------------------------------------------------------------------");
-//
-//        json = model.loadTransaction("2024-01-01", xsDateShort(instance.getServerDate()));
-//        System.err.println((String) json.get("message"));
-//        
-//        if (!"success".equals((String) json.get("result"))){
-//            System.err.println((String) json.get("message"));
-//            result = false;
-//        } else {
-//            System.out.println("--------------------------------------------------------------------");
-//            System.out.println("CASHIER RECEIVABLES");
-//            System.out.println("--------------------------------------------------------------------");
-//            for(int lnCtr = 0; lnCtr <= model.getMasterList().size()-1; lnCtr++){
-//                System.out.println("sTransNox  :  " + model.getMasterModel().getDetailModel(lnCtr).getTransNo());    
-//                System.out.println("dTransact  :  " + model.getMasterModel().getDetailModel(lnCtr).getTransactDte());
-//                System.out.println("sClientID  :  " + model.getMasterModel().getDetailModel(lnCtr).getClientID());   
-//                System.out.println("sBrBankCd  :  " + model.getMasterModel().getDetailModel(lnCtr).getBrBankCd());   
-//                System.out.println("sBrInsCde  :  " + model.getMasterModel().getDetailModel(lnCtr).getBrInsCde());   
-//                System.out.println("sRemarksx  :  " + model.getMasterModel().getDetailModel(lnCtr).getRemarks());    
-//                System.out.println("sReferNox  :  " + model.getMasterModel().getDetailModel(lnCtr).getReferNo());    
-//                System.out.println("sSourceCD  :  " + model.getMasterModel().getDetailModel(lnCtr).getSourceCD());   
-//                System.out.println("cPayerCde  :  " + model.getMasterModel().getDetailModel(lnCtr).getPayerCde());   
-//                System.out.println("nGrossAmt  :  " + model.getMasterModel().getDetailModel(lnCtr).getGrossAmt());   
-//                System.out.println("nDiscAmtx  :  " + model.getMasterModel().getDetailModel(lnCtr).getDiscAmt());    
-//                System.out.println("nDeductnx  :  " + model.getMasterModel().getDetailModel(lnCtr).getDiscAmt());    
-//                System.out.println("nTotalAmt  :  " + model.getMasterModel().getDetailModel(lnCtr).getTotalAmt());   
-//                System.out.println("nChckPayx  :  " + model.getMasterModel().getDetailModel(lnCtr).getChckPay());    
-//                System.out.println("nAmtPaidx  :  " + model.getMasterModel().getDetailModel(lnCtr).getAmtPaid());    
-//                System.out.println("sPayerNme  :  " + model.getMasterModel().getDetailModel(lnCtr).getPayerNme());   
-//                System.out.println("sOwnrNmxx  :  " + model.getMasterModel().getDetailModel(lnCtr).getOwnrNm());     
-//                System.out.println("cClientTp  :  " + model.getMasterModel().getDetailModel(lnCtr).getClientTp());   
-//                System.out.println("sAddressx  :  " + model.getMasterModel().getDetailModel(lnCtr).getAddress());    
-//                System.out.println("sBankName  :  " + model.getMasterModel().getDetailModel(lnCtr).getBankName());   
-//                System.out.println("sBankAddr  :  " + model.getMasterModel().getDetailModel(lnCtr).getBankAddr());   
-//                System.out.println("sInsNamex  :  " + model.getMasterModel().getDetailModel(lnCtr).getInsName());    
-//                System.out.println("sInsAddrx  :  " + model.getMasterModel().getDetailModel(lnCtr).getInsAddr());    
-//            }
-//            System.out.println((String) json.get("message"));
-//            result = true;
-//        }
-//        assertTrue(result);
-//        //assertFalse(result)
-//    
-//    }
-    
 }

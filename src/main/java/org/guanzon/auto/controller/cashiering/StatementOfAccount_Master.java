@@ -12,10 +12,8 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.guanzon.appdriver.agent.ShowDialogFX;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.base.SQLUtil;
@@ -24,7 +22,8 @@ import org.guanzon.appdriver.constant.TransactionStatus;
 import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.general.CancelForm;
 import org.guanzon.auto.general.SearchDialog;
-import org.guanzon.auto.model.cashiering.Model_Cashier_Receivables;
+import org.guanzon.auto.model.cashiering.Model_StatementOfAccount;
+import org.guanzon.auto.model.cashiering.Model_StatementOfAccount;
 import org.guanzon.auto.validator.cashiering.ValidatorFactory;
 import org.guanzon.auto.validator.cashiering.ValidatorInterface;
 import org.json.simple.JSONObject;
@@ -33,7 +32,7 @@ import org.json.simple.JSONObject;
  *
  * @author Arsiela
  */
-public class CashierReceivables_Master implements GTransaction{
+public class StatementOfAccount_Master implements GTransaction{
     GRider poGRider;
     String psBranchCd;
     boolean pbWtParent;
@@ -43,15 +42,15 @@ public class CashierReceivables_Master implements GTransaction{
     String psMessagex;
     public JSONObject poJSON;
     
-    Model_Cashier_Receivables poModel;
-    ArrayList<Model_Cashier_Receivables> paDetail;
+    Model_StatementOfAccount poModel;
+    ArrayList<Model_StatementOfAccount> paDetail;
     
-    public CashierReceivables_Master(GRider foGRider, boolean fbWthParent, String fsBranchCd) {
+    public StatementOfAccount_Master(GRider foGRider, boolean fbWthParent, String fsBranchCd) {
         poGRider = foGRider;
         pbWtParent = fbWthParent;
         psBranchCd = fsBranchCd.isEmpty() ? foGRider.getBranchCode() : fsBranchCd;
 
-        poModel = new Model_Cashier_Receivables(foGRider);
+        poModel = new Model_StatementOfAccount(foGRider);
         pnEditMode = EditMode.UNKNOWN;
     }
     
@@ -61,7 +60,7 @@ public class CashierReceivables_Master implements GTransaction{
     }
     
     @Override
-    public Model_Cashier_Receivables getMasterModel() {
+    public Model_StatementOfAccount getMasterModel() {
         return poModel;
     }
     
@@ -107,11 +106,11 @@ public class CashierReceivables_Master implements GTransaction{
             pnEditMode = EditMode.ADDNEW;
             org.json.simple.JSONObject obj;
 
-            poModel = new Model_Cashier_Receivables(poGRider);
+            poModel = new Model_StatementOfAccount(poGRider);
             Connection loConn = null;
             loConn = setConnection();
 
-            poModel.setTransNo(MiscUtil.getNextCode(poModel.getTable(), "sTransNox", true, poGRider.getConnection(), poGRider.getBranchCode()+"CAR"));
+            poModel.setTransNo(MiscUtil.getNextCode(poModel.getTable(), "sTransNox", true, poGRider.getConnection(), poGRider.getBranchCode()+"SOA"));
             poModel.newRecord();
             
             if (poModel == null){
@@ -145,7 +144,7 @@ public class CashierReceivables_Master implements GTransaction{
         pnEditMode = EditMode.READY;
         poJSON = new JSONObject();
         
-        poModel = new Model_Cashier_Receivables(poGRider);
+        poModel = new Model_StatementOfAccount(poGRider);
         poJSON = poModel.openRecord(fsValue);
         
         return poJSON;
@@ -182,7 +181,7 @@ public class CashierReceivables_Master implements GTransaction{
     public JSONObject saveTransaction() {
         poJSON = new JSONObject();  
         
-        ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.CashierReceivables_Master, poModel);
+        ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.StatementOfAccount_Master, poModel);
         validator.setGRider(poGRider);
         if (!validator.isEntryOkay()){
             poJSON.put("result", "error");
@@ -226,12 +225,12 @@ public class CashierReceivables_Master implements GTransaction{
         if (poModel.getEditMode() == EditMode.READY
                 || poModel.getEditMode() == EditMode.UPDATE) {
             try {
-//                poJSON = poModel.setTranStat(TransactionStatus.STATE_CANCELLED);
-//                if ("error".equals((String) poJSON.get("result"))) {
-//                    return poJSON;
-//                }
+                poJSON = poModel.setTranStat(TransactionStatus.STATE_CANCELLED);
+                if ("error".equals((String) poJSON.get("result"))) {
+                    return poJSON;
+                }
                 
-                ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.CashierReceivables_Master, poModel);
+                ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.StatementOfAccount_Master, poModel);
                 validator.setGRider(poGRider);
                 if (!validator.isEntryOkay()){
                     poJSON.put("result", "error");
@@ -240,7 +239,7 @@ public class CashierReceivables_Master implements GTransaction{
                 }
                 
                 CancelForm cancelform = new CancelForm();
-//                if (!cancelform.loadCancelWindow(poGRider, poModel.getTransNo(), poModel.getReferNo(), "POLICY")) { 
+//                if (!cancelform.loadCancelWindow(poGRider, poModel.getTransNo(), poModel.getTransNo(),"SOA")) { 
                 if (!cancelform.loadCancelWindow(poGRider, poModel.getTransNo(), poModel.getTable())) { 
                     poJSON.put("result", "error");
                     poJSON.put("message", "Cancellation failed.");
@@ -249,7 +248,7 @@ public class CashierReceivables_Master implements GTransaction{
                 
                 poJSON = poModel.saveRecord();
             } catch (SQLException ex) {
-                Logger.getLogger(CashierReceivables_Master.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(StatementOfAccount_Master.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
             poJSON = new JSONObject();
@@ -261,8 +260,8 @@ public class CashierReceivables_Master implements GTransaction{
     
     
     public JSONObject searchTransaction(String fsValue, boolean fbByCode) {
-        String lsHeader = "CAR Date»CAR No»Payer Name»Payer Address";
-        String lsColName = "dTransact»sTransNox»sPayerNme»sPayerAdd";
+        String lsHeader = "SOA Date»SOA No»Payer Name";
+        String lsColName = "dTransact»sTransNox»sPayerNme";
         String lsSQL = poModel.getSQL();
         System.out.println(lsSQL);
         JSONObject loJSON = SearchDialog.jsonSearch(
@@ -271,8 +270,8 @@ public class CashierReceivables_Master implements GTransaction{
                     "",
                     lsHeader,
                     lsColName,
-                "0.1D»0.2D»0.3D»0.3D", 
-                    "CASHIER RECEIVABLES",
+                "0.1D»0.2D»0.3D", 
+                    "STATEMENT OF ACCOUNT",
                     0);
             
         if (loJSON != null && !"error".equals((String) loJSON.get("result"))) {
@@ -310,56 +309,21 @@ public class CashierReceivables_Master implements GTransaction{
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    /**
-     * CAR existence checker
-     * @param fsPayerCode the Payer code where the car be paid.
-     * @param fsSourceCode the Source code of transaction
-     * @param fsFormCode the sTransNox of transaction
-     * @return 
-     */
-    public JSONObject checkExistingCAR(String fsPayerCode, String fsSourceCode, String fsFormCode){
-        JSONObject loJSON = new JSONObject();
-        try {
-            //Do not allow multiple application for insurance application
-            String lsID = "";
-            String lsDesc = "";
-            String lsSQL = poModel.makeSelectSQL();
-            lsSQL = MiscUtil.addCondition(lsSQL, " sReferNox = " + SQLUtil.toSQL(fsFormCode)
-                                                    + " AND cPayerCde = " + SQLUtil.toSQL(fsPayerCode)
-                                                    + " AND sSourceCD = " + SQLUtil.toSQL(fsSourceCode));
-            System.out.println("EXISTING CAR CHECK: " + lsSQL);
-            ResultSet loRS = poGRider.executeQuery(lsSQL);
-            if (MiscUtil.RecordCount(loRS) > 0){
-                while(loRS.next()){
-                    lsID = loRS.getString("sTransNox");
-                    lsDesc = xsDateShort(loRS.getDate("dTransact"));
-                }
-
-                MiscUtil.close(loRS);
-                loJSON.put("result", "success");
-                loJSON.put("sTransNox", lsID);
-                return loJSON;
-            }
-        } catch (SQLException ex) {
-            Logger.getLogger(CashierReceivables_Master.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return loJSON;
-    }
-    
-     public ArrayList<Model_Cashier_Receivables> getDetailList(){
+     public ArrayList<Model_StatementOfAccount> getDetailList(){
         if(paDetail == null){
            paDetail = new ArrayList<>();
         }
         return paDetail;
     }
-    public void setDetailList(ArrayList<Model_Cashier_Receivables> foObj){this.paDetail = foObj;}
+     
+    public void setDetailList(ArrayList<Model_StatementOfAccount> foObj){this.paDetail = foObj;}
     
     public void setDetail(int fnRow, int fnIndex, Object foValue){ paDetail.get(fnRow).setValue(fnIndex, foValue);}
     public void setDetail(int fnRow, String fsIndex, Object foValue){ paDetail.get(fnRow).setValue(fsIndex, foValue);}
     public Object getDetail(int fnRow, int fnIndex){return paDetail.get(fnRow).getValue(fnIndex);}
     public Object getDetail(int fnRow, String fsIndex){return paDetail.get(fnRow).getValue(fsIndex);}
     
-    public Model_Cashier_Receivables getDetailModel(int fnRow) {
+    public Model_StatementOfAccount getDetailModel(int fnRow) {
         return paDetail.get(fnRow);
     }
     
@@ -379,7 +343,7 @@ public class CashierReceivables_Master implements GTransaction{
             int lnctr = 0;
             if (MiscUtil.RecordCount(loRS) > 0) {
                 while(loRS.next()){
-                        paDetail.add(new Model_Cashier_Receivables(poGRider));
+                        paDetail.add(new Model_StatementOfAccount(poGRider));
                         paDetail.get(paDetail.size() - 1).openRecord( loRS.getString("sTransNox"));
                         
                         pnEditMode = EditMode.UPDATE;

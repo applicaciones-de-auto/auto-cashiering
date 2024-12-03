@@ -56,15 +56,37 @@ public class CashierReceivablesMaster  {
                         + " , a.nChckPayx "                                                                  
                         + " , a.nAmtPaidx "    
                         + " , CASE "
-                        + "     WHEN a.cPayerCde = 'a' THEN '' " //ASSOCIATE
-                        + "     WHEN a.cPayerCde = 'b' THEN '' " //BANK
-                        + "     WHEN a.cPayerCde = 'c' THEN '' " //CUSTOMER
-                        + "     WHEN a.cPayerCde = 'i' THEN '' " //INSURANCE
-                        + "     WHEN a.cPayerCde = 's' THEN '' " //SUPPLIER                                  
+                        + "     WHEN a.cPayerCde = 'a' THEN 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' " //ASSOCIATE
+                        + "     WHEN a.cPayerCde = 'b' THEN CONCAT(k.sBankName, ' ', h.sBrBankNm) " //BANK
+                        + "     WHEN a.cPayerCde = 'c' THEN b.sCompnyNm " //CUSTOMER
+                        + "     WHEN a.cPayerCde = 'i' THEN CONCAT(o.sInsurNme, ' ', l.sBrInsNme) " //INSURANCE
+                        + "     WHEN a.cPayerCde = 's' THEN 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' " //SUPPLIER                                  
                         + " 	ELSE ''  "                                                          
-                        + "    END AS sPayerNme " 
+                        + "    END AS sPayerNme "   
+                        + " , CASE "
+                        + "     WHEN a.cPayerCde = 'a' THEN 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' " //ASSOCIATE
+                        + "     WHEN a.cPayerCde = 'b' THEN a.sBrBankCd " //BANK
+                        + "     WHEN a.cPayerCde = 'c' THEN a.sClientID " //CUSTOMER
+                        + "     WHEN a.cPayerCde = 'i' THEN a.sBrInsCde " //INSURANCE
+                        + "     WHEN a.cPayerCde = 's' THEN 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' " //SUPPLIER                                  
+                        + " 	ELSE ''  "                                                          
+                        + "    END AS sPayerIDx " 
+                        + " , CASE "
+                        + "     WHEN a.cPayerCde = 'a' THEN 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' " //ASSOCIATE
+                        + "     WHEN a.cPayerCde = 'b' THEN CONCAT(IFNULL(h.sAddressx, ''), i.sTownName, j.sProvName) " //BANK
+                        + "     WHEN a.cPayerCde = 'c' THEN " //CUSTOMER
+                        + "     TRIM(IFNULL(CONCAT( IFNULL(CONCAT(d.sHouseNox,' ') , ''), "                    
+                        + "   IFNULL(CONCAT(d.sAddressx,' ') , ''), "                                        
+                        + "   IFNULL(CONCAT(e.sBrgyName,' '), ''),  "                                        
+                        + "   IFNULL(CONCAT(f.sTownName, ', '),''), "                                        
+                        + "   IFNULL(CONCAT(g.sProvName),'') ), '')) "
+                        + "     WHEN a.cPayerCde = 'i' THEN CONCAT(IFNULL(l.sAddressx, ''), m.sTownName, n.sProvName) " //INSURANCE
+                        + "     WHEN a.cPayerCde = 's' THEN 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' " //SUPPLIER                                  
+                        + " 	ELSE ''  "                                                          
+                        + "    END AS sPayerAdd "
                         + " , b.sCompnyNm AS sOwnrNmxx "                                                     
-                        + " , b.cClientTp "                                                                  
+                        + " , b.cClientTp "                                                              
+                        + " , b.sTaxIDNox "                                                                
                         + " , TRIM(IFNULL(CONCAT( IFNULL(CONCAT(d.sHouseNox,' ') , ''), "                    
                         + "   IFNULL(CONCAT(d.sAddressx,' ') , ''), "                                        
                         + "   IFNULL(CONCAT(e.sBrgyName,' '), ''),  "                                        
@@ -74,24 +96,42 @@ public class CashierReceivablesMaster  {
                         + " , CONCAT(IFNULL(h.sAddressx, ''), i.sTownName, j.sProvName) AS sBankAddr "       
                         + " , CONCAT(o.sInsurNme, ' ', l.sBrInsNme) AS sInsNamex "                           
                         + " , CONCAT(IFNULL(l.sAddressx, ''), m.sTownName, n.sProvName) AS sInsAddrx "       
+                        + " , IFNULL(p.sVSPNOxxx, IFNULL(q.sReferNox, IFNULL(r.sReferNox, ''))) AS sFormNoxx "  
+                        + " , p.sVSPNOxxx AS sVSPNoxxx "                                                        
+                        + " , q.sReferNox AS sVSANoxxx "                                                        
+                        + " , r.sReferNox AS sInsAppNo "                                                        
+                        + " , aa.sCSNoxxxx "                                                                    
+                        + " , bb.sPlateNox "                                                                    
+                        + " , cc.sDescript "                                                                    
                         + " FROM cashier_receivables a  "                                                    
                         + " LEFT JOIN client_master b ON b.sClientID = a.sClientID "                         
                         + " LEFT JOIN client_address c ON c.sClientID = a.sClientID AND c.cPrimaryx = 1 "    
                         + " LEFT JOIN addresses d ON d.sAddrssID = c.sAddrssID  "                            
                         + " LEFT JOIN barangay e ON e.sBrgyIDxx = d.sBrgyIDxx   "                            
                         + " LEFT JOIN towncity f ON f.sTownIDxx = d.sTownIDxx   "                            
-                        + " LEFT JOIN province g ON g.sProvIDxx = f.sProvIDxx       "                        
+                        + " LEFT JOIN province g ON g.sProvIDxx = f.sProvIDxx       "    
+                        /*BANK*/
                         + " LEFT JOIN banks_branches h ON h.sBrBankID = a.sBrBankCd "                        
                         + " LEFT JOIN towncity i ON i.sTownIDxx = h.sTownIDxx "                              
                         + " LEFT JOIN province j ON j.sProvIDxx = i.sProvIDxx "                              
-                        + " LEFT JOIN banks k ON k.sBankIDxx = h.sBankIDxx    "                              
+                        + " LEFT JOIN banks k ON k.sBankIDxx = h.sBankIDxx    "    
+                        /*INSURANCE*/
                         + " LEFT JOIN insurance_company_branches l ON l.sBrInsIDx = a.sBrInsCde "            
                         + " LEFT JOIN towncity m ON m.sTownIDxx = l.sTownIDxx "                              
                         + " LEFT JOIN province n ON n.sProvIDxx = m.sProvIDxx "                              
                         + " LEFT JOIN insurance_company o ON o.sInsurIDx = l.sInsurIDx "
+                        /*TRANSACTION*/                                                                               
+                        + " LEFT JOIN vsp_master p ON p.sTransNox = a.sReferNox  "                                    
+                        + " LEFT JOIN customer_inquiry_reservation q ON q.sTransNox = a.sReferNox "                   
+                        + " LEFT JOIN insurance_policy_application r ON r.sTransNox = a.sReferNox "                   
+                        + " LEFT JOIN insurance_policy_proposal s ON s.sTransNox = r.sReferNox    "                   
+                        /*VEHICLE INFORMATION*/                                                                       
+                        + " LEFT JOIN vehicle_serial aa ON aa.sSerialID = p.sSerialID OR aa.sSerialID = s.sSerialID " 
+                        + " LEFT JOIN vehicle_serial_registration bb ON bb.sSerialID = aa.sSerialID "                 
+                        + " LEFT JOIN vehicle_master cc ON cc.sVhclIDxx = aa.sVhclIDxx " 
                         + " WHERE 0=1";
         
-        
+        System.out.println(lsSQL);
         ResultSet loRS = instance.executeQuery(lsSQL);
         try {
             if (MiscUtil.resultSet2XML(instance, loRS, System.getProperty("sys.default.path.metadata"), "cashier_receivables", "")){

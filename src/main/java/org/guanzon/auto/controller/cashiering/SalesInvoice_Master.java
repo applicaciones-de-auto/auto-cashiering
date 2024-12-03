@@ -5,7 +5,9 @@
  */
 package org.guanzon.auto.controller.cashiering;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,10 +16,12 @@ import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
+import org.guanzon.appdriver.constant.RecordStatus;
 import org.guanzon.appdriver.constant.TransactionStatus;
 import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.general.CancelForm;
 import org.guanzon.auto.general.SearchDialog;
+import org.guanzon.auto.general.TransactionStatusHistory;
 import org.guanzon.auto.model.cashiering.Model_SalesInvoice_Master;
 import org.guanzon.auto.model.sales.Model_VehicleDeliveryReceipt_Master;
 import org.guanzon.auto.validator.cashiering.ValidatorFactory;
@@ -106,10 +110,11 @@ public class SalesInvoice_Master implements GTransaction {
             Connection loConn = null;
             loConn = setConnection();
 
+            poModel.newRecord();
             poModel.setTransNo(MiscUtil.getNextCode(poModel.getTable(), "sTransNox", true, poGRider.getConnection(), poGRider.getBranchCode()+"S"));
 //            poModel.setReferNo(MiscUtil.getNextCode(poModel.getTable(), "sReferNox", true, poGRider.getConnection(), poGRider.getBranchCode()));
             poModel.setPrinted("0");
-            poModel.newRecord();
+            poModel.setBranchCd(poGRider.getBranchCode());
             
             if (poModel == null){
                 poJSON.put("result", "error");
@@ -184,6 +189,32 @@ public class SalesInvoice_Master implements GTransaction {
         return poJSON;
     }
     
+    public JSONObject savePrinted(boolean fsIsValidate, String fsFormType){
+        JSONObject loJSON = new JSONObject();
+        String lsOrigPrint = poModel.getPrinted();
+        poModel.setPrinted("1"); //Set to Printed
+        if(fsIsValidate){
+            ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.SalesInvoice_Master, poModel);
+            validator.setGRider(poGRider);
+            if (!validator.isEntryOkay()){
+                poModel.setPrinted(lsOrigPrint); //Revert to Previous Value
+                poJSON.put("result", "error");
+                poJSON.put("message", validator.getMessage());
+                return poJSON;
+            }
+        } else {
+            loJSON = saveTransaction();
+            if(!"error".equals((String) loJSON.get("result"))){
+                TransactionStatusHistory loEntity = new TransactionStatusHistory(poGRider);
+                loJSON = loEntity.updateStatusHistory(poModel.getTransNo(), poModel.getTable(), fsFormType, "5", "PRINT"); //5 = STATE_PRINTED
+                if("error".equals((String) loJSON.get("result"))){
+                    return loJSON;
+                }
+            }
+        }
+        return loJSON;
+    }
+    
     @Override
     public JSONObject deleteTransaction(String string) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -221,7 +252,8 @@ public class SalesInvoice_Master implements GTransaction {
                 } 
 
                 CancelForm cancelform = new CancelForm();
-                if (!cancelform.loadCancelWindow(poGRider, poModel.getReferNo(), poModel.getTransNo(), "VSI")) {
+//                if (!cancelform.loadCancelWindow(poGRider, poModel.getReferNo(), poModel.getTransNo(), "VSI")) { 
+                if (!cancelform.loadCancelWindow(poGRider, poModel.getTransNo(), poModel.getTable())) { 
                     poJSON.put("result", "error");
                     poJSON.put("message", "Cancellation failed.");
                     return poJSON;
@@ -247,14 +279,16 @@ public class SalesInvoice_Master implements GTransaction {
     /**
      * Search SI Transaction
      * @param fsValue Reference No
+     * @param fsReceiptType Document Type
      * @return 
      */
-    public JSONObject searchTransaction(String fsValue) {
+    public JSONObject searchReceipt(String fsValue, String fsReceiptType) {
         String lsHeader = "SI Date»SI No»Customer»Address»Status"; 
         String lsColName = "dTransact»sReferNox»sBuyCltNm»sAddressx»sTranStat"; 
         String lsSQL = poModel.getSQL();
         
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox IN (SELECT si_master_source.sTransNox FROM si_master_source WHERE si_master_source.sTranType = 'VSI') ");
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.cDocTypex LIKE " + SQLUtil.toSQL("%"+fsReceiptType)
+                                             + " AND a.sTransNox NOT IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
         System.out.println(lsSQL);
         JSONObject loJSON = SearchDialog.jsonSearch(
                     poGRider,
@@ -263,7 +297,40 @@ public class SalesInvoice_Master implements GTransaction {
                     lsHeader,
                     lsColName,
                 "0.1D»0.2D»0.4D»0.4D»0.2D", 
-                    "SI",
+                    "SALES INVOICE",
+                    0);
+
+        if (loJSON != null && !"error".equals((String) loJSON.get("result"))) {
+        }else {
+            loJSON = new JSONObject();
+            loJSON.put("result", "error");
+            loJSON.put("message", "No Transaction loaded.");
+            return loJSON;
+        }
+
+        return loJSON;
+    }
+    
+    /**
+     * Search SI Transaction
+     * @param fsValue Reference No
+     * @return 
+     */
+    public JSONObject searchTransaction(String fsValue) {
+        String lsHeader = "SI Date»SI No»Customer»Address»Status"; 
+        String lsColName = "dTransact»sReferNox»sBuyCltNm»sAddressx»sTranStat"; 
+        String lsSQL = poModel.getSQL();
+        
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
+        System.out.println(lsSQL);
+        JSONObject loJSON = SearchDialog.jsonSearch(
+                    poGRider,
+                    lsSQL,
+                    "",
+                    lsHeader,
+                    lsColName,
+                "0.1D»0.2D»0.4D»0.4D»0.2D", 
+                    "VSI",
                     0);
 
         if (loJSON != null && !"error".equals((String) loJSON.get("result"))) {
@@ -301,7 +368,6 @@ public class SalesInvoice_Master implements GTransaction {
     public void setTransactionStatus(String string) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
     
     public JSONObject searchVDR(String fsValue, boolean fbByCode, String fsClientType) {
         JSONObject loJSON = new JSONObject();  
@@ -351,4 +417,28 @@ public class SalesInvoice_Master implements GTransaction {
         return loJSON;
     }
     
+    public BigDecimal checkPaidAmt(String fsTransNo){
+        BigDecimal ldblPaidAmt = new BigDecimal("0.00");
+        String lsSQL = " SELECT IFNULL(SUM(b.nTranAmtx),0.00) AS nTranAmtx " +
+                       " FROM si_master a " +
+                       " LEFT JOIN si_master_source b ON b.sReferNox = a.sTransNox ";
+        lsSQL = MiscUtil.addCondition(lsSQL, " b.sSourceNo = " + SQLUtil.toSQL(fsTransNo)
+                                                +" AND a.sTransNox <> " + SQLUtil.toSQL(poModel.getTransNo())
+                                                +" AND a.cTranStat <> " + SQLUtil.toSQL(TransactionStatus.STATE_CANCELLED)) ;
+        System.out.println("EXISTING VSI NO CHECK: " + lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+
+        if (MiscUtil.RecordCount(loRS) > 0){
+            try {
+                while(loRS.next()){
+                    ldblPaidAmt = new BigDecimal(loRS.getString("nTranAmtx"));
+                }
+
+                MiscUtil.close(loRS);
+            } catch (SQLException ex) {
+                Logger.getLogger(SalesInvoice_Master.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return ldblPaidAmt;
+    }
 }

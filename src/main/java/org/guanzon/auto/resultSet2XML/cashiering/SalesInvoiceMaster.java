@@ -52,7 +52,7 @@ public class SalesInvoiceMaster  {
                         + "  , a.nVatAmtxx "                                                                                               
                         + "  , a.nNonVATSl "                                                                                               
                         + "  , a.nZroVATSl "                                                                                               
-                        + "  , a.cWTRatexx "                                                                                               
+                        + "  , a.nWTRatexx "                                                                                               
                         + "  , a.nCWTAmtxx "                                                                                               
                         + "  , a.nAdvPaymx "                                                                                               
                         + "  , a.nNetTotal "                                                                                               
@@ -74,14 +74,23 @@ public class SalesInvoiceMaster  {
                         + "     ELSE 'ACTIVE'   "                                                                                          
                         + "    END AS sTranStat "                                                                                          
                         /*BUYING COSTUMER*/                                                                                                
-                        + " , b.sCompnyNm AS sBuyCltNm "                                                                                   
+        //                + " , b.sCompnyNm AS sBuyCltNm "                                                                                   
                         + " , b.cClientTp              "                                                                                  
                         + " , b.sTaxIDNox              "                                                                                    
-                        + " , TRIM(IFNULL(CONCAT( IFNULL(CONCAT(d.sHouseNox,' ') , ''), "                                                  
-                        + "    IFNULL(CONCAT(d.sAddressx,' ') , ''),                    "                                                  
-                        + "    IFNULL(CONCAT(e.sBrgyName,' '), ''),                     "                                                  
-                        + "    IFNULL(CONCAT(f.sTownName, ', '),''),                    "                                                  
-                        + "    IFNULL(CONCAT(g.sProvName),'') )	, '')) AS sAddressx     "                                                  
+        //                + " , TRIM(IFNULL(CONCAT( IFNULL(CONCAT(d.sHouseNox,' ') , ''), "                                                  
+        //                + "    IFNULL(CONCAT(d.sAddressx,' ') , ''),                    "                                                  
+        //                + "    IFNULL(CONCAT(e.sBrgyName,' '), ''),                     "                                                  
+        //                + "    IFNULL(CONCAT(f.sTownName, ', '),''),                    "                                                  
+        //                + "    IFNULL(CONCAT(g.sProvName),'') )	, '')) AS sAddressx     "    
+                        + " , CASE "                                                                                                                                 
+                        + " WHEN (h.sBrBankID != NULL || TRIM(h.sBrBankID) != '' )THEN CONCAT(k.sBankName, ' ', h.sBrBankNm) "                                       
+                        + " WHEN (l.sBrInsIDx != NULL || TRIM(l.sBrInsIDx) != '' )THEN CONCAT(o.sInsurNme, ' ', l.sBrInsNme) "                                       
+                        + " ELSE b.sCompnyNm   END AS sBuyCltNm "                                                                                                    
+                        + " , CASE "                                                                                                                                 
+                        + " WHEN (h.sBrBankID != NULL || TRIM(h.sBrBankID) != '' )THEN CONCAT(IFNULL(h.sAddressx, ''), i.sTownName, j.sProvName) "                   
+                        + " WHEN (l.sBrInsIDx != NULL || TRIM(l.sBrInsIDx) != '' )THEN CONCAT(IFNULL(l.sAddressx, ''), m.sTownName, n.sProvName) "                   
+                        + " ELSE TRIM(IFNULL(CONCAT( IFNULL(CONCAT(d.sHouseNox,' ') , ''), IFNULL(CONCAT(d.sAddressx,' ') , ''), "                                   
+                        + " IFNULL(CONCAT(e.sBrgyName,' '), ''),   IFNULL(CONCAT(f.sTownName, ', '),''), IFNULL(CONCAT(g.sProvName),'') )	, ''))   END AS sAddressx "
                         + " FROM si_master a  "                                                                                            
                          /*CUSTOMER*/                                                                                                      
                         + " LEFT JOIN client_master b ON b.sClientID = a.sClientID  "                                                      
@@ -91,10 +100,20 @@ public class SalesInvoiceMaster  {
                         + " LEFT JOIN towncity f ON f.sTownIDxx = d.sTownIDxx  "                                                           
                         + " LEFT JOIN province g ON g.sProvIDxx = f.sProvIDxx  "                                                           
                         + " LEFT JOIN client_mobile ba ON ba.sClientID = b.sClientID AND ba.cPrimaryx = 1 "                                
-                        + " LEFT JOIN client_email_address bb ON bb.sClientID = b.sClientID AND bb.cPrimaryx = 1 "  
+                        + " LEFT JOIN client_email_address bb ON bb.sClientID = b.sClientID AND bb.cPrimaryx = 1 "
+                        /*BANK*/                                                                   
+                        + " LEFT JOIN banks_branches h ON h.sBrBankID = a.sClientID "              
+                        + " LEFT JOIN towncity i ON i.sTownIDxx = h.sTownIDxx "                    
+                        + " LEFT JOIN province j ON j.sProvIDxx = i.sProvIDxx "                    
+                        + " LEFT JOIN banks k ON k.sBankIDxx = h.sBankIDxx "                       
+                        /*INSURANCE*/                                                              
+                        + " LEFT JOIN insurance_company_branches l ON l.sBrInsIDx = a.sClientID "  
+                        + " LEFT JOIN towncity m ON m.sTownIDxx = l.sTownIDxx "                    
+                        + " LEFT JOIN province n ON n.sProvIDxx = m.sProvIDxx "                    
+                        + " LEFT JOIN insurance_company o ON o.sInsurIDx = l.sInsurIDx "  
                         + " WHERE 0=1";
         
-        
+        System.out.println(lsSQL);
         ResultSet loRS = instance.executeQuery(lsSQL);
         try {
             if (MiscUtil.resultSet2XML(instance, loRS, System.getProperty("sys.default.path.metadata"), "si_master", "")){

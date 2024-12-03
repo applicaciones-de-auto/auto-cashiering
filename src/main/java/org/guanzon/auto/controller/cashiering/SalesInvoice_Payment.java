@@ -13,7 +13,7 @@ import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GTranDet;
-import org.guanzon.auto.model.cashiering.Model_SalesInvoice_Source;
+import org.guanzon.auto.model.cashiering.Model_SalesInvoice_Payment;
 import org.guanzon.auto.model.sales.Model_VehicleDeliveryReceipt_Master;
 import org.guanzon.auto.validator.cashiering.ValidatorFactory;
 import org.guanzon.auto.validator.cashiering.ValidatorInterface;
@@ -23,8 +23,8 @@ import org.json.simple.JSONObject;
  *
  * @author Arsiela
  */
-public class SalesInvoice_Source implements GTranDet {
-    final String XML = "Model_SalesInvoice_Source.xml";
+public class SalesInvoice_Payment implements GTranDet {
+    final String XML = "Model_SalesInvoice_Payment.xml";
     GRider poGRider;
     String psTargetBranchCd = "";
     boolean pbWtParent;
@@ -33,10 +33,10 @@ public class SalesInvoice_Source implements GTranDet {
     String psMessagex;
     public JSONObject poJSON;
     
-    ArrayList<Model_SalesInvoice_Source> paDetail;
-    ArrayList<Model_SalesInvoice_Source> paRemDetail;
+    ArrayList<Model_SalesInvoice_Payment> paDetail;
+    ArrayList<Model_SalesInvoice_Payment> paRemDetail;
 
-    public SalesInvoice_Source(GRider foAppDrver){
+    public SalesInvoice_Payment(GRider foAppDrver){
         poGRider = foAppDrver;
     }
     
@@ -54,7 +54,7 @@ public class SalesInvoice_Source implements GTranDet {
     }
 
     @Override
-    public Model_SalesInvoice_Source getDetailModel(int fnRow) {
+    public Model_SalesInvoice_Payment getDetailModel(int fnRow) {
         return paDetail.get(fnRow);
     }
     
@@ -65,20 +65,20 @@ public class SalesInvoice_Source implements GTranDet {
         
         poJSON = new JSONObject();
         if (paDetail.size()<=0){
-            paDetail.add(new Model_SalesInvoice_Source(poGRider));
+            paDetail.add(new Model_SalesInvoice_Payment(poGRider));
             paDetail.get(0).newRecord();
             paDetail.get(0).setTransNo(fsTransNo);
-            paDetail.get(0).setEntryNo(0);
+//            paDetail.get(0).setEntryNo(0);
             
             poJSON.put("result", "success");
-            poJSON.put("message", "SI Source add record.");
+            poJSON.put("message", "SI Payment add record.");
         } else {
-            paDetail.add(new Model_SalesInvoice_Source(poGRider));
+            paDetail.add(new Model_SalesInvoice_Payment(poGRider));
             paDetail.get(paDetail.size()-1).newRecord();
             paDetail.get(paDetail.size()-1).setTransNo(fsTransNo);
-            paDetail.get(paDetail.size()-1).setEntryNo(0);
+//            paDetail.get(paDetail.size()-1).setEntryNo(0);
             poJSON.put("result", "success");
-            poJSON.put("message", "SI Source add record.");
+            poJSON.put("message", "SI Payment add record.");
         }
         return poJSON;
     }
@@ -87,10 +87,10 @@ public class SalesInvoice_Source implements GTranDet {
         paDetail = new ArrayList<>();
         paRemDetail = new ArrayList<>();
         poJSON = new JSONObject();
-        Model_SalesInvoice_Source loEntity = new Model_SalesInvoice_Source(poGRider);
+        Model_SalesInvoice_Payment loEntity = new Model_SalesInvoice_Payment(poGRider);
         String lsSQL =   loEntity.makeSelectSQL();
-        lsSQL = MiscUtil.addCondition(lsSQL, " sReferNox = " + SQLUtil.toSQL(fsValue))
-                                                + "  ORDER BY nEntryNox ASC " ;
+        lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL(fsValue));
+//                                                + "  ORDER BY nEntryNox ASC " ;
         System.out.println(lsSQL);
         ResultSet loRS = poGRider.executeQuery(lsSQL);
         
@@ -98,8 +98,8 @@ public class SalesInvoice_Source implements GTranDet {
             int lnctr = 0;
             if (MiscUtil.RecordCount(loRS) > 0) {
                 while(loRS.next()){
-                        paDetail.add(new Model_SalesInvoice_Source(poGRider));
-                        paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox"));
+                        paDetail.add(new Model_SalesInvoice_Payment(poGRider));
+                        paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sTransNox"), loRS.getString("sPayTrnCD"));
                         
                         pnEditMode = EditMode.UPDATE;
                         lnctr++;
@@ -111,6 +111,7 @@ public class SalesInvoice_Source implements GTranDet {
 //                paDetail = new ArrayList<>();
 //                addDetail(fsValue);
                 poJSON.put("result", "error");
+                poJSON.put("continue", true);
                 poJSON.put("message", "No record selected.");
             }
             MiscUtil.close(loRS);
@@ -129,7 +130,7 @@ public class SalesInvoice_Source implements GTranDet {
             int lnRemSize = paRemDetail.size() -1;
             if(lnRemSize >= 0){
                 for(lnCtr = 0; lnCtr <= lnRemSize; lnCtr++){
-//                    obj = paRemDetail.get(lnCtr).deleteRecord();
+                    obj = paRemDetail.get(lnCtr).deleteRecord();
                     if("error".equals((String) obj.get("result"))){
                         return obj;
                     }
@@ -152,7 +153,7 @@ public class SalesInvoice_Source implements GTranDet {
         
         for (lnCtr = 0; lnCtr <= lnSize; lnCtr++){
             if(lnCtr>0){
-                if(paDetail.get(lnCtr).getReferNo().isEmpty()){
+                if(paDetail.get(lnCtr).getTransNo().isEmpty()){
                     continue; //skip, instead of removing the actual detail
 //                    paDetail.remove(lnCtr);
 //                    lnCtr++;
@@ -162,11 +163,11 @@ public class SalesInvoice_Source implements GTranDet {
                 }
             }
             
-            paDetail.get(lnCtr).setReferNo(fsTransNo);
-            paDetail.get(lnCtr).setEntryNo(lnCtr+1);
+            paDetail.get(lnCtr).setTransNo(fsTransNo);
+//            paDetail.get(lnCtr).setEntryNo(lnCtr+1);
 //            paDetail.get(lnCtr).setTargetBranchCd(psTargetBranchCd);
             
-            ValidatorInterface validator = ValidatorFactory.make(ValidatorFactory.TYPE.SalesInvoice_Source, paDetail.get(lnCtr));
+            ValidatorInterface validator = ValidatorFactory.make(ValidatorFactory.TYPE.SalesInvoice_Payment, paDetail.get(lnCtr));
             validator.setGRider(poGRider);
             if (!validator.isEntryOkay()){
                 obj.put("result", "error");
@@ -185,10 +186,12 @@ public class SalesInvoice_Source implements GTranDet {
     public Object removeDetail(int fnRow){
         JSONObject loJSON = new JSONObject();
         
-        if(paDetail.get(fnRow).getEntryNo() != null){
-            if(paDetail.get(fnRow).getEntryNo() != 0){
+        if(paDetail.get(fnRow).getPayTrnCD() != null){
+            if(paDetail.get(fnRow).getPayTrnCD().trim().isEmpty()){ // != 0
                 RemoveDetail(fnRow);
             }
+        } else {
+            RemoveDetail(fnRow);
         }
         
         paDetail.remove(fnRow);
@@ -203,26 +206,26 @@ public class SalesInvoice_Source implements GTranDet {
         
         poJSON = new JSONObject();
         if (paRemDetail.size()<=0){
-            paRemDetail.add(new Model_SalesInvoice_Source(poGRider));
-            paRemDetail.get(0).openRecord(paDetail.get(fnRow).getTransNo());
+            paRemDetail.add(new Model_SalesInvoice_Payment(poGRider));
+            paRemDetail.get(0).openRecord(paDetail.get(fnRow).getTransNo(), paDetail.get(fnRow).getPayTrnCD());
             poJSON.put("result", "success");
             poJSON.put("message", "added to remove record.");
         } else {
-            paRemDetail.add(new Model_SalesInvoice_Source(poGRider));
-            paRemDetail.get(paRemDetail.size()-1).openRecord(paDetail.get(fnRow).getTransNo());
+            paRemDetail.add(new Model_SalesInvoice_Payment(poGRider));
+            paRemDetail.get(paRemDetail.size()-1).openRecord(paDetail.get(fnRow).getTransNo(), paDetail.get(fnRow).getPayTrnCD());
             poJSON.put("result", "success");
             poJSON.put("message", "added to remove record.");
         }
         return poJSON;
     }
     
-    public ArrayList<Model_SalesInvoice_Source> getDetailList(){
+    public ArrayList<Model_SalesInvoice_Payment> getDetailList(){
         if(paDetail == null){
            paDetail = new ArrayList<>();
         }
         return paDetail;
     }
-    public void setDetailList(ArrayList<Model_SalesInvoice_Source> foObj){this.paDetail = foObj;}
+    public void setDetailList(ArrayList<Model_SalesInvoice_Payment> foObj){this.paDetail = foObj;}
     
     public Object getDetail(int fnRow, int fnIndex){return paDetail.get(fnRow).getValue(fnIndex);}
     public Object getDetail(int fnRow, String fsIndex){return paDetail.get(fnRow).getValue(fsIndex);}
