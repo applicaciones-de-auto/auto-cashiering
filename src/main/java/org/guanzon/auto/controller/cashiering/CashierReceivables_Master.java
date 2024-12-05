@@ -263,7 +263,7 @@ public class CashierReceivables_Master implements GTransaction{
     public JSONObject searchTransaction(String fsValue, boolean fbByCode) {
         String lsHeader = "CAR Date»CAR No»Payer Name»Payer Address";
         String lsColName = "dTransact»sTransNox»sPayerNme»sPayerAdd";
-        String lsSQL = poModel.getSQL();
+        String lsSQL = poModel.getSQL() + " GROUP BY a.sTransNox ";
         System.out.println(lsSQL);
         JSONObject loJSON = SearchDialog.jsonSearch(
                     poGRider,
@@ -369,7 +369,7 @@ public class CashierReceivables_Master implements GTransaction{
         String lsSQL = MiscUtil.addCondition(poModel.getSQL(), " DATE(a.dTransact) >= " + SQLUtil.toSQL(fsFrom)
                                                 + " AND DATE(a.dTransact) <= " + SQLUtil.toSQL(fsTo)
                                                 + " GROUP BY a.sTransNox "
-                                                + " ORDER BY a.dTransact ASC "
+                                                + " ORDER BY a.dTransact DESC "
                                                 );
                 
         System.out.println(lsSQL);

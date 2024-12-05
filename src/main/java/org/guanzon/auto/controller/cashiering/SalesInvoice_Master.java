@@ -287,8 +287,8 @@ public class SalesInvoice_Master implements GTransaction {
         String lsColName = "dTransact»sReferNox»sBuyCltNm»sAddressx»sTranStat"; 
         String lsSQL = poModel.getSQL();
         
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.cDocTypex LIKE " + SQLUtil.toSQL("%"+fsReceiptType)
-                                             + " AND a.sTransNox NOT IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.cDocTypex = " + SQLUtil.toSQL(fsReceiptType));
+//                                             + " AND a.sTransNox NOT IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
         System.out.println(lsSQL);
         JSONObject loJSON = SearchDialog.jsonSearch(
                     poGRider,
@@ -321,7 +321,8 @@ public class SalesInvoice_Master implements GTransaction {
         String lsColName = "dTransact»sReferNox»sBuyCltNm»sAddressx»sTranStat"; 
         String lsSQL = poModel.getSQL();
         
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.cDocTypex = '0' "); //FOR VSI
+//        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
         System.out.println(lsSQL);
         JSONObject loJSON = SearchDialog.jsonSearch(
                     poGRider,

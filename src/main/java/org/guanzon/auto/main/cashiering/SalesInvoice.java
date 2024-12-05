@@ -16,6 +16,7 @@ import static org.guanzon.appdriver.base.CommonUtils.NumberFormat;
 import static org.guanzon.appdriver.base.CommonUtils.NumberFormat;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.constant.EditMode;
+import org.guanzon.appdriver.constant.TransactionStatus;
 import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.controller.cashiering.CashierReceivables_Master;
 import org.guanzon.auto.controller.cashiering.Credicard_Trans;
@@ -364,7 +365,24 @@ public class SalesInvoice implements GTransaction{
 
     @Override
     public JSONObject cancelTransaction(String fsValue) {
-        return poController.cancelTransaction(fsValue);
+        poJSON = poController.cancelTransaction(fsValue);
+        if("error".equals((String) poJSON.get("result"))){
+            return poJSON;
+        }
+        
+        //UPDATE CAR BALANCE
+        JSONObject loJSON = new JSONObject();
+        loJSON = computeCARBalance(false);
+        if("error".equals((String) loJSON.get("result"))){
+            return loJSON;
+        }
+        
+        //UPDATE SOA BALANCE
+        loJSON = computeSOABalance(false);
+        if("error".equals((String) loJSON.get("result"))){
+            return loJSON;
+        }
+        return poJSON;
     }
 
     @Override
@@ -591,32 +609,34 @@ public class SalesInvoice implements GTransaction{
         
         for(int lnCtr = 0; lnCtr <= psCARTransCde.size()-1; lnCtr++){
             //Get SI Payment
-            for(int lnRow = 0;lnRow <= poDetail.getDetailList().size()-1;lnRow++){
-                if(psCARTransCde.get(lnCtr).equals(poDetail.getDetailModel(lnRow).getSourceNo())){
-                    ldblPaidAmt = ldblPaidAmt.add(poDetail.getDetailModel(lnRow).getTranAmt());
+            if(!poController.getMasterModel().getTranStat().equals(TransactionStatus.STATE_CANCELLED)){
+                for(int lnRow = 0;lnRow <= poDetail.getDetailList().size()-1;lnRow++){
+                    if(psCARTransCde.get(lnCtr).equals(poDetail.getDetailModel(lnRow).getSourceNo())){
+                        ldblPaidAmt = ldblPaidAmt.add(poDetail.getDetailModel(lnRow).getTranAmt());
+                    }
                 }
             }
-           
-            ldblOthPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
-            //CAR TOTAL - (OTHER PAYMENT + CURRENT RECEIPT PAYMENT)
-//            ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
-            ldblPaidAmt = ldblPaidAmt.add(ldblOthPaidAmt);
             
-            if(fisValidate){
-                ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt);
-                // Get the default locale or specify one
-                NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
-                if(ldblPaidAmt.compareTo(new BigDecimal("0.00")) < 0){
-                    loJSON.put("result", "error");
-                    loJSON.put("message", "Invalid CAR Balance " + numberFormat.format(ldblPaidAmt) 
-                            + " computed for CAR No. " + poCAR.getMasterModel().getTransNo() 
-                            + ".\n\nPlease check your CAR Total vs Total Payment.");
-                    return loJSON;
-                }
+            loJSON = poCAR.openTransaction(psCARTransCde.get(lnCtr));
+            if("error".equals((String) loJSON.get("result"))){
+                return loJSON;
             } else {
-                loJSON = poCAR.openTransaction(psCARTransCde.get(lnCtr));
-                if("error".equals((String) loJSON.get("result"))){
-                    return loJSON;
+                ldblOthPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr));
+                //CAR TOTAL - (OTHER PAYMENT + CURRENT RECEIPT PAYMENT)
+    //            ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
+                ldblPaidAmt = ldblPaidAmt.add(ldblOthPaidAmt);
+                
+                if(fisValidate){
+                    ldblPaidAmt = poCAR.getMasterModel().getTotalAmt().subtract(ldblPaidAmt);
+                    // Get the default locale or specify one
+                    NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
+                    if(ldblPaidAmt.compareTo(new BigDecimal("0.00")) < 0){
+                        loJSON.put("result", "error");
+                        loJSON.put("message", "Invalid CAR Balance " + numberFormat.format(ldblPaidAmt) 
+                                + " computed for CAR No. " + poCAR.getMasterModel().getTransNo() 
+                                + ".\n\nPlease check your CAR Total vs Total Payment.");
+                        return loJSON;
+                    }
                 } else {
                     loJSON = poCAR.updateTransaction();
                     if(!"error".equals((String) loJSON.get("result"))){
@@ -627,6 +647,8 @@ public class SalesInvoice implements GTransaction{
                     }
                 }
             }
+            //Clear amount paid
+            ldblPaidAmt = new BigDecimal("0.00");
         }
         
         return loJSON;
@@ -638,34 +660,35 @@ public class SalesInvoice implements GTransaction{
         BigDecimal ldblPaidAmt = new BigDecimal("0.00");
         
         for(int lnCtr = 0; lnCtr <= psSOATransCde.size()-1; lnCtr++){
-            
             //Get SI Payment
-            for(int lnRow = 0;lnRow <= poDetail.getDetailList().size()-1;lnRow++){
-                if(psSOATransCde.get(lnCtr).equals(poDetail.getDetailModel(lnRow).getSourceNo())){
-                    ldblPaidAmt = ldblPaidAmt.add(poDetail.getDetailModel(lnRow).getTranAmt());
+            if(!poController.getMasterModel().getTranStat().equals(TransactionStatus.STATE_CANCELLED)){
+                for(int lnRow = 0;lnRow <= poDetail.getDetailList().size()-1;lnRow++){
+                    if(psSOATransCde.get(lnCtr).equals(poDetail.getDetailModel(lnRow).getSourceNo())){
+                        ldblPaidAmt = ldblPaidAmt.add(poDetail.getDetailModel(lnRow).getTranAmt());
+                    }
                 }
             }
             
-            ldblOthPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
-            //CAR TOTAL - (OTHER PAYMENT + CURRENT RECEIPT PAYMENT)
-//                ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
-            ldblPaidAmt = ldblPaidAmt.add(ldblOthPaidAmt);
-            
-            if(fisValidate){
-                ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt);
-                // Get the default locale or specify one
-                NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
-                if(ldblPaidAmt.compareTo(new BigDecimal("0.00")) < 0){
-                    loJSON.put("result", "error");
-                    loJSON.put("message", "Invalid SOA Balance " + numberFormat.format(ldblPaidAmt) 
-                            + " computed for SOA No. " + poCAR.getMasterModel().getTransNo() 
-                            + ".\n\nPlease check your SOA Total vs Total Payment.");
-                    return loJSON;
-                }
+            loJSON = poSOA.openTransaction(psSOATransCde.get(lnCtr));
+            if("error".equals((String) loJSON.get("result"))){
+                return loJSON;
             } else {
-                loJSON = poSOA.openTransaction(psSOATransCde.get(lnCtr));
-                if("error".equals((String) loJSON.get("result"))){
-                    return loJSON;
+                ldblOthPaidAmt = poController.checkPaidAmt(psCARTransCde.get(lnCtr)); 
+                //CAR TOTAL - (OTHER PAYMENT + CURRENT RECEIPT PAYMENT)
+    //                ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt.add(ldblOthPaidAmt));
+                ldblPaidAmt = ldblPaidAmt.add(ldblOthPaidAmt);
+
+                if(fisValidate){
+                    ldblPaidAmt = poSOA.getMasterModel().getTranTotl().subtract(ldblPaidAmt);
+                    // Get the default locale or specify one
+                    NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
+                    if(ldblPaidAmt.compareTo(new BigDecimal("0.00")) < 0){
+                        loJSON.put("result", "error");
+                        loJSON.put("message", "Invalid SOA Balance " + numberFormat.format(ldblPaidAmt) 
+                                + " computed for SOA No. " + poCAR.getMasterModel().getTransNo() 
+                                + ".\n\nPlease check your SOA Total vs Total Payment.");
+                        return loJSON;
+                    }
                 } else {
                     loJSON = poSOA.updateTransaction();
                     if(!"error".equals((String) loJSON.get("result"))){
@@ -676,6 +699,8 @@ public class SalesInvoice implements GTransaction{
                     }
                 }
             }
+            //Clear amount paid
+            ldblPaidAmt = new BigDecimal("0.00");
         }
         
         return loJSON;
@@ -812,13 +837,13 @@ public class SalesInvoice implements GTransaction{
         loJSON = loEntity.searchTransaction(fsValue, false);
         if(!"error".equals((String) loJSON.get("result"))){
             if(poController.getMasterModel().getClientID() == null){
-                poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
+                poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getPayerID());
                 poController.getMasterModel().setBuyCltNm(loEntity.getMasterModel().getMasterModel().getPayerNme());
                 poController.getMasterModel().setAddress(loEntity.getMasterModel().getMasterModel().getPayerAdd());
                 poController.getMasterModel().setTaxIDNo(loEntity.getMasterModel().getMasterModel().getTaxIDNo());
             } else {
                 if(poController.getMasterModel().getClientID().trim().isEmpty()){
-                    poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getClientID());
+                    poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getPayerID());
                     poController.getMasterModel().setBuyCltNm(loEntity.getMasterModel().getMasterModel().getPayerNme());
                     poController.getMasterModel().setAddress(loEntity.getMasterModel().getMasterModel().getPayerAdd());
                     poController.getMasterModel().setTaxIDNo(loEntity.getMasterModel().getMasterModel().getTaxIDNo());

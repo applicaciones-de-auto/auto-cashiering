@@ -102,7 +102,8 @@ public class CashierReceivablesMaster  {
                         + " , r.sReferNox AS sInsAppNo "                                                        
                         + " , aa.sCSNoxxxx "                                                                    
                         + " , bb.sPlateNox "                                                                    
-                        + " , cc.sDescript "                                                                    
+                        + " , cc.sDescript "   
+                        + " , GROUP_CONCAT(u.sReferNox) AS sSINoxxxx "                                                                    
                         + " FROM cashier_receivables a  "                                                    
                         + " LEFT JOIN client_master b ON b.sClientID = a.sClientID "                         
                         + " LEFT JOIN client_address c ON c.sClientID = a.sClientID AND c.cPrimaryx = 1 "    
@@ -129,6 +130,8 @@ public class CashierReceivablesMaster  {
                         + " LEFT JOIN vehicle_serial aa ON aa.sSerialID = p.sSerialID OR aa.sSerialID = s.sSerialID " 
                         + " LEFT JOIN vehicle_serial_registration bb ON bb.sSerialID = aa.sSerialID "                 
                         + " LEFT JOIN vehicle_master cc ON cc.sVhclIDxx = aa.sVhclIDxx " 
+                        + " LEFT JOIN si_master_source t ON t.sSourceNo = a.sTransNox " 
+                        + " LEFT JOIN si_master u on u.sTransNox = t.sReferNox AND u.cTranStat <> " + SQLUtil.toSQL(TransactionStatus.STATE_CANCELLED)
                         + " WHERE 0=1";
         
         System.out.println(lsSQL);
