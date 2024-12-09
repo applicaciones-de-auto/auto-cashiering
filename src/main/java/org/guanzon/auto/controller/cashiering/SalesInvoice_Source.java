@@ -129,7 +129,7 @@ public class SalesInvoice_Source implements GTranDet {
             int lnRemSize = paRemDetail.size() -1;
             if(lnRemSize >= 0){
                 for(lnCtr = 0; lnCtr <= lnRemSize; lnCtr++){
-//                    obj = paRemDetail.get(lnCtr).deleteRecord();
+                    obj = paRemDetail.get(lnCtr).deleteRecord( paRemDetail.get(lnCtr).getTransNo());
                     if("error".equals((String) obj.get("result"))){
                         return obj;
                     }

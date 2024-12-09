@@ -221,6 +221,8 @@ public class SalesInvoice implements GTransaction{
             return checkData(poJSON);
         }
         
+        if (!pbWtParent) poGRider.commitTrans();
+        
         //UPDATE CAR BALANCE
         JSONObject loJSON = new JSONObject();
         loJSON = computeCARBalance(false);
@@ -234,7 +236,6 @@ public class SalesInvoice implements GTransaction{
             return loJSON;
         }
         
-        if (!pbWtParent) poGRider.commitTrans();
         
         return poJSON;
     }

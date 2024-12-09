@@ -237,6 +237,12 @@ public class CashierReceivables implements GTransaction{
     
     public ArrayList getMasterList(){return poController.getDetailList();}
     
+    public JSONObject loadReceipts(){
+        return poController.loadReceipts();
+    }
+    
+    public ArrayList getReceiptList(){return poController.getReceiptList();}
+    
     /**
      * Check Existing CAR
      * @param fsTransSource the Transaction source

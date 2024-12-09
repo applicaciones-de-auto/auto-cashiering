@@ -25,6 +25,7 @@ import org.guanzon.appdriver.iface.GTransaction;
 import org.guanzon.auto.general.CancelForm;
 import org.guanzon.auto.general.SearchDialog;
 import org.guanzon.auto.model.cashiering.Model_Cashier_Receivables;
+import org.guanzon.auto.model.cashiering.Model_SalesInvoice_Master;
 import org.guanzon.auto.validator.cashiering.ValidatorFactory;
 import org.guanzon.auto.validator.cashiering.ValidatorInterface;
 import org.json.simple.JSONObject;
@@ -45,6 +46,7 @@ public class CashierReceivables_Master implements GTransaction{
     
     Model_Cashier_Receivables poModel;
     ArrayList<Model_Cashier_Receivables> paDetail;
+    ArrayList<Model_SalesInvoice_Master> paReceipt;
     
     public CashierReceivables_Master(GRider foGRider, boolean fbWthParent, String fsBranchCd) {
         poGRider = foGRider;
@@ -346,7 +348,7 @@ public class CashierReceivables_Master implements GTransaction{
         return loJSON;
     }
     
-     public ArrayList<Model_Cashier_Receivables> getDetailList(){
+    public ArrayList<Model_Cashier_Receivables> getDetailList(){
         if(paDetail == null){
            paDetail = new ArrayList<>();
         }
@@ -399,6 +401,66 @@ public class CashierReceivables_Master implements GTransaction{
             poJSON.put("message", e.getMessage());
         }
         return poJSON;
+    }
+    
+    
+    public ArrayList<Model_SalesInvoice_Master> getReceiptList(){
+        if(paReceipt == null){
+           paReceipt = new ArrayList<>();
+        }
+        return paReceipt;
+    }
+    
+    public Model_SalesInvoice_Master getReceiptModel(int fnRow) {
+        return paReceipt.get(fnRow);
+    }
+    
+    public JSONObject loadReceipts() {
+        JSONObject loJSON = new JSONObject();
+        paReceipt = new ArrayList<>();
+        String lsSQL = " SELECT "
+                       + " a.sTransNox "
+                       + " , a.sReferNox "
+                       + " , a.dTransact "
+                       + " , a.cTranStat "
+                       + " , b.sSourceNo "
+                       + " FROM si_master a "
+                       + " LEFT JOIN si_master_source b ON b.sReferNox = a.sTransNox ";
+                
+        lsSQL = MiscUtil.addCondition(lsSQL, " b.sSourceNo = " + SQLUtil.toSQL(poModel.getTransNo())
+                                                + " AND a.cTranStat <> " + SQLUtil.toSQL(TransactionStatus.STATE_CANCELLED)
+                                                + " GROUP BY a.sTransNox "
+                                                + " ORDER BY a.dTransact DESC "
+                                                );
+                
+        System.out.println(lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        
+       try {
+            int lnctr = 0;
+            if (MiscUtil.RecordCount(loRS) > 0) {
+                while(loRS.next()){
+                        paReceipt.add(new Model_SalesInvoice_Master(poGRider));
+                        paReceipt.get(paReceipt.size() - 1).openRecord( loRS.getString("sTransNox"));
+                        
+                        pnEditMode = EditMode.UPDATE;
+                        lnctr++;
+                        loJSON.put("result", "success");
+                        loJSON.put("message", "Record loaded successfully.");
+                    } 
+                
+            }else{
+                loJSON.put("result", "error");
+                loJSON.put("continue", true);
+                loJSON.put("message", "No record selected.");
+            }
+            MiscUtil.close(loRS);
+        } catch (SQLException e) {
+            loJSON.put("result", "error");
+            loJSON.put("message", e.getMessage());
+        }
+        
+        return loJSON;
     }
     
     private static String xsDateShort(java.util.Date fdValue) {
