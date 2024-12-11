@@ -867,6 +867,20 @@ public class SalesInvoice implements GTransaction{
         CashierReceivables loEntity = new CashierReceivables(poGRider, pbWtParent, psBranchCd);
         loJSON = loEntity.searchTransaction(fsValue, false);
         if(!"error".equals((String) loJSON.get("result"))){
+            //Check for exisiting CAR do not allow when payer type is not the same
+            for(int lnCtr = 0; lnCtr <= poDetail.getDetailList().size()-1; lnCtr++){
+                if(poDetail.getDetailModel(lnCtr).getPayerCde() != null){
+                    if(!poDetail.getDetailModel(lnCtr).getPayerCde().trim().isEmpty()) {
+                        if(!poDetail.getDetailModel(lnCtr).getPayerCde().equals(loEntity.getMasterModel().getMasterModel().getPayerCde())){
+                            loJSON.put("result", "error");
+                            loJSON.put("message","Payer type mis match."
+                                                    + "\n\nInsert aborted.");
+                            return loJSON;
+                        }
+                    }
+                }
+            }
+            
             if(poController.getMasterModel().getClientID() == null){
                 poController.getMasterModel().setClientID(loEntity.getMasterModel().getMasterModel().getPayerID());
                 poController.getMasterModel().setBuyCltNm(loEntity.getMasterModel().getMasterModel().getPayerNme());
@@ -886,6 +900,7 @@ public class SalesInvoice implements GTransaction{
                 poDetail.getDetailModel(getSIDetailList().size()-1).setSourceNo(loEntity.getMasterModel().getMasterModel().getTransNo());
                 poDetail.getDetailModel(getSIDetailList().size()-1).setDescript(loEntity.getMasterModel().getMasterModel().getSourceCD());
                 poDetail.getDetailModel(getSIDetailList().size()-1).setFormNo(loEntity.getMasterModel().getMasterModel().getFormNo());
+                poDetail.getDetailModel(getSIDetailList().size()-1).setPayerCde(loEntity.getMasterModel().getMasterModel().getPayerCde());
                 
                 poDetail.getDetailModel(getSIDetailList().size()-1).setTranType(loEntity.getDetailModel().getDetailModel(lnCtr).getTranType());
                 poDetail.getDetailModel(getSIDetailList().size()-1).setTranAmt(loEntity.getDetailModel().getDetailModel(lnCtr).getTotalAmt());
