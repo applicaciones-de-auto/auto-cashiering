@@ -304,7 +304,7 @@ public class CashierReceivables implements GTransaction{
                 poController.getMasterModel().setClientID(loVSP.getMasterModel().getMasterModel().getClientID());
                 poController.getMasterModel().setGrossAmt(loVSP.getMasterModel().getMasterModel().getTranTotl()); 
                 poController.getMasterModel().setDiscAmt(loVSP.getTotalDiscount());
-                poController.getMasterModel().setTotalAmt(loVSP.getMasterModel().getMasterModel().getNetTTotl()); 
+                poController.getMasterModel().setTotalAmt(loVSP.getMasterModel().getMasterModel().getTranTotl().subtract(loVSP.getTotalDiscount())); 
             }
 
             //Mandatory delete the CAR detail
