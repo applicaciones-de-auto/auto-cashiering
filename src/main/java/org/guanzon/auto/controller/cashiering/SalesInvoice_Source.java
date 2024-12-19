@@ -67,7 +67,7 @@ public class SalesInvoice_Source implements GTranDet {
         if (paDetail.size()<=0){
             paDetail.add(new Model_SalesInvoice_Source(poGRider));
             paDetail.get(0).newRecord();
-            paDetail.get(0).setTransNo(fsTransNo);
+            paDetail.get(0).setReferNo(fsTransNo);
             paDetail.get(0).setEntryNo(0);
             
             poJSON.put("result", "success");
@@ -75,7 +75,7 @@ public class SalesInvoice_Source implements GTranDet {
         } else {
             paDetail.add(new Model_SalesInvoice_Source(poGRider));
             paDetail.get(paDetail.size()-1).newRecord();
-            paDetail.get(paDetail.size()-1).setTransNo(fsTransNo);
+            paDetail.get(paDetail.size()-1).setReferNo(fsTransNo);
             paDetail.get(paDetail.size()-1).setEntryNo(0);
             poJSON.put("result", "success");
             poJSON.put("message", "SI Source add record.");
@@ -129,7 +129,7 @@ public class SalesInvoice_Source implements GTranDet {
             int lnRemSize = paRemDetail.size() -1;
             if(lnRemSize >= 0){
                 for(lnCtr = 0; lnCtr <= lnRemSize; lnCtr++){
-//                    obj = paRemDetail.get(lnCtr).deleteRecord();
+                    obj = paRemDetail.get(lnCtr).deleteRecord( paRemDetail.get(lnCtr).getTransNo());
                     if("error".equals((String) obj.get("result"))){
                         return obj;
                     }

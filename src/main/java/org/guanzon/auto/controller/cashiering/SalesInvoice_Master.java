@@ -287,8 +287,8 @@ public class SalesInvoice_Master implements GTransaction {
         String lsColName = "dTransact»sReferNox»sBuyCltNm»sAddressx»sTranStat"; 
         String lsSQL = poModel.getSQL();
         
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.cDocTypex LIKE " + SQLUtil.toSQL("%"+fsReceiptType)
-                                             + " AND a.sTransNox NOT IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.cDocTypex = " + SQLUtil.toSQL(fsReceiptType));
+//                                             + " AND a.sTransNox NOT IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
         System.out.println(lsSQL);
         JSONObject loJSON = SearchDialog.jsonSearch(
                     poGRider,
@@ -321,7 +321,8 @@ public class SalesInvoice_Master implements GTransaction {
         String lsColName = "dTransact»sReferNox»sBuyCltNm»sAddressx»sTranStat"; 
         String lsSQL = poModel.getSQL();
         
-        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
+        lsSQL = MiscUtil.addCondition(lsSQL, " a.cDocTypex = '0' "); //FOR VSI
+//        lsSQL = MiscUtil.addCondition(lsSQL, " a.sTransNox IN (SELECT si_master_source.sReferNox FROM si_master_source WHERE si_master_source.sSourceCD = 'VSI') ");
         System.out.println(lsSQL);
         JSONObject loJSON = SearchDialog.jsonSearch(
                     poGRider,
@@ -417,7 +418,7 @@ public class SalesInvoice_Master implements GTransaction {
         return loJSON;
     }
     
-    public BigDecimal checkPaidAmt(String fsTransNo){
+    public BigDecimal checkPaidAmt(String fsTransNo, String fsTransType){
         BigDecimal ldblPaidAmt = new BigDecimal("0.00");
         String lsSQL = " SELECT IFNULL(SUM(b.nTranAmtx),0.00) AS nTranAmtx " +
                        " FROM si_master a " +
@@ -425,6 +426,11 @@ public class SalesInvoice_Master implements GTransaction {
         lsSQL = MiscUtil.addCondition(lsSQL, " b.sSourceNo = " + SQLUtil.toSQL(fsTransNo)
                                                 +" AND a.sTransNox <> " + SQLUtil.toSQL(poModel.getTransNo())
                                                 +" AND a.cTranStat <> " + SQLUtil.toSQL(TransactionStatus.STATE_CANCELLED)) ;
+        
+        if(!fsTransType.trim().isEmpty()){
+            lsSQL = lsSQL + " AND b.sTranType = " + SQLUtil.toSQL(fsTransType);
+        }
+        
         System.out.println("EXISTING VSI NO CHECK: " + lsSQL);
         ResultSet loRS = poGRider.executeQuery(lsSQL);
 

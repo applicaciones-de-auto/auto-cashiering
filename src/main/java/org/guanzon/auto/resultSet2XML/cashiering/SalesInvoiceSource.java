@@ -52,6 +52,7 @@ public class SalesInvoiceSource  {
                         + "  , a.nEntryNox "
                         + "  , IFNULL( aa.sReferNox,IFNULL(c.sVSPNOxxx, IFNULL(d.sReferNox, IFNULL(e.sReferNox,'')))) AS sFormNoxx "
                         + "  , b.sSourceCD AS sDescript "
+                        + "  , b.cPayerCde "
                         + " FROM si_master_source a "                                              
                         + " LEFT JOIN udr_master aa ON aa.sTransNox = a.sSourceNo "                
                         + " LEFT JOIN cashier_receivables b ON b.sTransNox = a.sSourceNo "         

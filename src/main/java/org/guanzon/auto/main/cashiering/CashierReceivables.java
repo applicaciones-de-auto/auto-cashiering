@@ -237,6 +237,12 @@ public class CashierReceivables implements GTransaction{
     
     public ArrayList getMasterList(){return poController.getDetailList();}
     
+    public JSONObject loadReceipts(){
+        return poController.loadReceipts();
+    }
+    
+    public ArrayList getReceiptList(){return poController.getReceiptList();}
+    
     /**
      * Check Existing CAR
      * @param fsTransSource the Transaction source
@@ -298,7 +304,7 @@ public class CashierReceivables implements GTransaction{
                 poController.getMasterModel().setClientID(loVSP.getMasterModel().getMasterModel().getClientID());
                 poController.getMasterModel().setGrossAmt(loVSP.getMasterModel().getMasterModel().getTranTotl()); 
                 poController.getMasterModel().setDiscAmt(loVSP.getTotalDiscount());
-                poController.getMasterModel().setTotalAmt(loVSP.getMasterModel().getMasterModel().getNetTTotl()); 
+                poController.getMasterModel().setTotalAmt(loVSP.getMasterModel().getMasterModel().getTranTotl().subtract(loVSP.getTotalDiscount())); 
             }
 
             //Mandatory delete the CAR detail
